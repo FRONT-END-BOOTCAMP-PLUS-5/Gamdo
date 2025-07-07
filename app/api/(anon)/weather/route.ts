@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { WeatherService } from "../../../../backend/application/recommender/weather";
+import { WeatherService } from "../../../../backend/application/recommender/GetMovieWeatherUseCase";
 import { WeatherRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommender/weather";
 
 // 의존성 주입을 위한 인스턴스 생성
