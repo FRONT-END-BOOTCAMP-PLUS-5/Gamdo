@@ -6,7 +6,7 @@ import {
   type LatLng,
   type GridXY,
 } from "./coordinate-converter";
-import type { ParsedWeatherInfo } from "../backend/domain/entities/weather";
+import type { ParsedWeatherInfo } from "../../../backend/domain/entities/recommender/weather";
 
 // 주소 정보 타입
 export interface AddressInfo {

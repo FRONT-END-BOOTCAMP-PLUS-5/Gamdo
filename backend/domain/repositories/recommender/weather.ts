@@ -1,4 +1,7 @@
-import { WeatherRequest, WeatherResponse } from "../entities/weather";
+import {
+  WeatherRequest,
+  WeatherResponse,
+} from "../../entities/recommender/weather";
 
 // 날씨 데이터 조회 리포지토리 인터페이스
 export interface WeatherRepository {
