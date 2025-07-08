@@ -7,6 +7,7 @@ import {
   validatePassword,
   validateNickname,
 } from "../../../../utils/validation";
+import bcrypt from "bcrypt";
 
 export class CreateSignupUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -15,18 +16,20 @@ export class CreateSignupUseCase {
     // 0. 유효성 검사
     if (!validateName(dto.name)) {
       throw new Error(
-        "이름은 한글, 영어, 숫자만 입력할 수 있습니다. (한글 자음/모음 분리 불가)"
+        "이름은 10자리 이내 한글, 영어, 숫자만 입력할 수 있습니다. (한글 자음/모음 분리 불가)"
       );
     }
     if (!validateEmail(dto.login_id)) {
       throw new Error("이메일 형식의 아이디만 입력할 수 있습니다.");
     }
     if (!validatePassword(dto.password)) {
-      throw new Error("비밀번호는 숫자, 영어, 특수문자만 입력할 수 있습니다.");
+      throw new Error(
+        "비밀번호는 숫자, 영어, 특수문자를 조합하여 입력해주세요."
+      );
     }
     if (!validateNickname(dto.nickname)) {
       throw new Error(
-        "닉네임은 한글, 영어, 숫자, 특수문자만 입력할 수 있습니다."
+        "닉네임은 8자리 이내 한글, 영어, 숫자, 특수문자만 입력할 수 있습니다."
       );
     }
 
@@ -43,11 +46,14 @@ export class CreateSignupUseCase {
     if (nicknameExists) {
       throw new Error("이미 사용 중인 닉네임입니다.");
     }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
     // 2. User 엔티티 생성
     const user = new User(
       dto.name,
       dto.login_id,
-      dto.password, // 해싱 필요!
+      hashedPassword,
       dto.nickname,
       dto.profile_image ?? null,
       "user" // 우선은 role user 고정

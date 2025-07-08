@@ -7,8 +7,8 @@ export default function SignupPage() {
       body: JSON.stringify({
         name: "테스트유저",
         login_id: "test" + Math.floor(Math.random() * 10000) + "@example.com",
-        password: "testpa ssword",
-        nickname: "test1111",
+        password: "testpassword123!",
+        nickname: "test1232",
         profile_image: null,
       }),
     });

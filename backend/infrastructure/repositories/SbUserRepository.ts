@@ -1,4 +1,3 @@
-// backend/infrastructure/SbUserRepository.ts
 import { SupabaseClient } from "@supabase/supabase-js";
 import { UserRepository } from "../../domain/repositories/UserRepository";
 import { User } from "../../domain/entities/User";
