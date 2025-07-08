@@ -1,11 +1,35 @@
 import { UserRepository } from "../../../domain/repositories/UserRepository";
 import { SignupRequestDto, SignupResponseDto } from "../dtos/SignupDto";
 import { User } from "../../../domain/entities/User";
+import {
+  validateName,
+  validateEmail,
+  validatePassword,
+  validateNickname,
+} from "../../../../utils/validation";
 
 export class CreateSignupUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(dto: SignupRequestDto): Promise<SignupResponseDto> {
+    // 0. 유효성 검사
+    if (!validateName(dto.name)) {
+      throw new Error(
+        "이름은 한글, 영어, 숫자만 입력할 수 있습니다. (한글 자음/모음 분리 불가)"
+      );
+    }
+    if (!validateEmail(dto.login_id)) {
+      throw new Error("이메일 형식의 아이디만 입력할 수 있습니다.");
+    }
+    if (!validatePassword(dto.password)) {
+      throw new Error("비밀번호는 숫자, 영어, 특수문자만 입력할 수 있습니다.");
+    }
+    if (!validateNickname(dto.nickname)) {
+      throw new Error(
+        "닉네임은 한글, 영어, 숫자, 특수문자만 입력할 수 있습니다."
+      );
+    }
+
     // 1. 이메일 중복 체크
     const emailExists = await this.userRepository.isEmailExists(dto.login_id);
     if (emailExists) {
