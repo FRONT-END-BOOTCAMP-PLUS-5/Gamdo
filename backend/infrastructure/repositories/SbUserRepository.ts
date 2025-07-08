@@ -46,4 +46,25 @@ export class SbUserRepository implements UserRepository {
       data.created_at
     );
   }
+
+  // login_id로 유저 조회
+  async getUserByLoginId(login_id: string): Promise<User | null> {
+    const { data, error } = await this.supabase
+      .from("users")
+      .select()
+      .eq("login_id", login_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    return new User(
+      data.name,
+      data.login_id,
+      data.password,
+      data.nickname,
+      data.profile_image,
+      data.role,
+      data.user_id,
+      data.created_at
+    );
+  }
 }

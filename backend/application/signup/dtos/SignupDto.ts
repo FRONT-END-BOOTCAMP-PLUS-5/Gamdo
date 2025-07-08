@@ -1,4 +1,3 @@
-// backend/application/dtos/SignupDto.ts
 export interface SignupRequestDto {
   name: string;
   login_id: string;
