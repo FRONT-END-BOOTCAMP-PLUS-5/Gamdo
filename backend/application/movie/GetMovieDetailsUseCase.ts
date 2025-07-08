@@ -1,4 +1,4 @@
-import { TmdbApi } from "../../infrastructure/tmdb/TmdbApi";
+import { TmdbApi } from "../../../utils/tmdb/TmdbApi";
 
 export class GetMovieDetailsUseCase {
   private tmdbApi: typeof TmdbApi;

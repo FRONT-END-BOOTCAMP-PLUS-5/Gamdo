@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ReviewRepositoryImpl } from "../../../backend/infrastructure/repositories/ReviewRepositoryImpl";
 import { CreateReviewUseCase } from "../../../backend/application/review/CreateReviewUseCase";
 import { GetMovieDetailsUseCase } from "../../../backend/application/movie/GetMovieDetailsUseCase";
-import { TmdbApi } from "../../../backend/infrastructure/tmdb/TmdbApi";
+import { TmdbApi } from "../../../utils/tmdb/TmdbApi";
 
 const reviewRepository = new ReviewRepositoryImpl();
 const createReviewUseCase = new CreateReviewUseCase(reviewRepository);
