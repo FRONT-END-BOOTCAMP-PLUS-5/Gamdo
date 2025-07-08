@@ -51,11 +51,6 @@ export function useWeatherLocation() {
       const position = await getCurrentPosition();
       const gridCoordinates = convertToGrid(position.lat, position.lng);
 
-      console.log(`📍 현재 위치: ${position.lat}, ${position.lng}`);
-      console.log(
-        `🗺️ 격자 좌표: nx=${gridCoordinates.nx}, ny=${gridCoordinates.ny}`
-      );
-
       setState((prev) => ({
         ...prev,
         position,
@@ -64,7 +59,6 @@ export function useWeatherLocation() {
 
       // 2단계: 주소 정보 가져오기
       const address = await getAddressFromCoordinates(position);
-      console.log(`🏠 주소 정보: ${address.fullAddress}`);
 
       setState((prev) => ({
         ...prev,
@@ -261,15 +255,12 @@ export async function getAddressFromCoordinates(
     // 전체 주소
     const fullAddress = data.display_name || "주소를 찾을 수 없습니다";
 
-    console.log("🗺️ 역지오코딩 응답:", data);
-
     return {
       city: city || "정보없음",
       district: district || "정보없음",
       fullAddress: fullAddress,
     };
-  } catch (error) {
-    console.error("주소 조회 중 오류:", error);
+  } catch {
     return {
       city: "주소조회실패",
       district: "주소조회실패",

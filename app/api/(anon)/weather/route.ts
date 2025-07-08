@@ -33,8 +33,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log(`🌤️ 파싱된 날씨 정보 조회 시작 (nx: ${nx}, ny: ${ny})`);
-
     // 파싱된 날씨 정보 조회 (동적 좌표 전달)
     const result = await weather_service.getCurrentWeatherParsed(nx, ny);
 
@@ -48,8 +46,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log("✅ 파싱된 날씨 정보 조회 성공");
-
     // 성공 응답
     return NextResponse.json({
       success: true,
@@ -57,8 +53,7 @@ export async function GET(request: Request) {
       timestamp: result.timestamp,
       message: "파싱된 날씨 정보입니다",
     });
-  } catch (error) {
-    console.error("💥 파싱된 날씨 API 호출 중 오류 발생:", error);
+  } catch {
     return NextResponse.json(
       {
         error: "서버 내부 오류가 발생했습니다",

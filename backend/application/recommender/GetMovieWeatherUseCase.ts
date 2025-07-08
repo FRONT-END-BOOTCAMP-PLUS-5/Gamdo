@@ -96,18 +96,6 @@ export class WeatherService {
 
     // 현재 시간에서 40분 전 시간 계산
     const targetTime = new Date(now.getTime() - 40 * 60 * 1000);
-    console.log(
-      `🕐 현재 시간: ${now.getHours()}:${now
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`
-    );
-    console.log(
-      `🕐 40분 전 시간: ${targetTime.getHours()}:${targetTime
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`
-    );
 
     // 기상청 API 날짜 형식으로 변환 (YYYYMMDD)
     const year = targetTime.getFullYear();
@@ -145,12 +133,6 @@ export class WeatherService {
       .toString()
       .padStart(2, "0")}`;
 
-    console.log(
-      `🕐 계산된 기준 시간: ${baseHour}:${baseMinute
-        .toString()
-        .padStart(2, "0")} (${baseTime})`
-    );
-
     return baseTime;
   }
 
@@ -175,7 +157,6 @@ export class WeatherService {
       }
 
       const items = weatherData.response.body.items.item;
-      console.log(`📊 받은 날씨 데이터 항목 수: ${items.length}`);
 
       // 데이터 카테고리별로 분류
       const weatherMap = this.categorizeWeatherData(items);
@@ -189,7 +170,6 @@ export class WeatherService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error("날씨 데이터 파싱 중 오류:", error);
       return {
         success: false,
         error:
@@ -213,7 +193,6 @@ export class WeatherService {
       // 실황 데이터(obsrValue)와 예보 데이터(fcstValue) 모두 처리
       const value = item.obsrValue || item.fcstValue || "N/A";
       weatherMap.set(item.category, value);
-      console.log(`📋 ${item.category}: ${value}`);
     });
 
     return weatherMap;
@@ -229,11 +208,6 @@ export class WeatherService {
     weatherMap: Map<string, string>,
     firstItem: WeatherItem
   ): ParsedWeatherInfo {
-    console.log("🔍 카테고리별 데이터 확인:");
-    weatherMap.forEach((value, key) => {
-      console.log(`  ${key}: ${value}`);
-    });
-
     // 하늘 상태 파싱 (SKY)
     const skyCondition = this.parseSkyCondition(weatherMap.get("SKY"));
 
