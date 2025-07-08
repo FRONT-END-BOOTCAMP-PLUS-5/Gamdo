@@ -1,6 +1,7 @@
 import { User } from "../entities/User";
 
 export interface UserRepository {
-  isLoginIdDuplicated(login_id: string): Promise<boolean>;
+  isEmailExists(login_id: string): Promise<boolean>;
+  isNicknameExists(nickname: string): Promise<boolean>;
   createUser(user: User): Promise<User>;
 }

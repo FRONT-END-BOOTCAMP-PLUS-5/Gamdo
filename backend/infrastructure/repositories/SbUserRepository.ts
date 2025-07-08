@@ -7,7 +7,7 @@ export class SbUserRepository implements UserRepository {
   constructor(private supabase: SupabaseClient) {}
 
   // 로그인 아이디 중복 체크
-  async isLoginIdDuplicated(login_id: string): Promise<boolean> {
+  async isEmailExists(login_id: string): Promise<boolean> {
     const { data, error } = await this.supabase
       .from("users")
       .select("user_id")
@@ -17,12 +17,22 @@ export class SbUserRepository implements UserRepository {
     return !!data;
   }
 
-  // 유저 생성
-  async createUser(user: User): Promise<User> {
-    console.log("유저 정보 " + user);
+  // 닉네임 중복 체크
+  async isNicknameExists(nickname: string): Promise<boolean> {
     const { data, error } = await this.supabase
       .from("users")
-      .insert(user) // user_id, created_at 없이 insert
+      .select("user_id")
+      .eq("nickname", nickname)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return !!data;
+  }
+
+  // 유저 생성
+  async createUser(user: User): Promise<User> {
+    const { data, error } = await this.supabase
+      .from("users")
+      .insert(user)
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -32,7 +42,9 @@ export class SbUserRepository implements UserRepository {
       data.password,
       data.nickname,
       data.profile_image,
-      data.role
+      data.role,
+      data.user_id,
+      data.created_at
     );
   }
 }
