@@ -1,22 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { convertToGrid } from "../../utils/supabase/recommender/coordinate-converter";
+import { convertToGrid } from "../../../utils/supabase/recommender/coordinate-converter";
 import {
   LocationInfo,
-  WeatherInfo,
   WeatherApiResponse,
-  AiApiResponse,
-  AiWeatherTestState,
-} from "./types/ai-weather";
+} from "../../domain/entities/recommender/weather";
+import { GeminiClientApiResponse } from "../../domain/entities/recommender/gemini";
+import { GeminiWeatherTestState } from "./GetGeminiResponseUseCase";
 
-const AiWeatherTest = () => {
-  // 컴포넌트 상태 관리
-  const [state, setState] = useState<AiWeatherTestState>({
+// UI 컴포넌트 (비즈니스 로직은 GetGeminiResponseUseCase에서 가져옴)
+const GeminiWeatherComponent = () => {
+  const [state, setState] = useState<GeminiWeatherTestState>({
     step: "location",
     location: null,
     weather: null,
-    aiResponse: null,
+    geminiResponse: null,
     loading: false,
     error: null,
   });
@@ -37,14 +36,12 @@ const AiWeatherTest = () => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 10000,
-            maximumAge: 300000, // 5분간 캐시 사용
+            maximumAge: 300000,
           });
         }
       );
 
       const { latitude, longitude } = position.coords;
-
-      // GPS 좌표를 기상청 격자 좌표로 변환
       const gridCoords = convertToGrid(latitude, longitude);
 
       const locationInfo: LocationInfo = {
@@ -98,7 +95,7 @@ const AiWeatherTest = () => {
       setState((prev) => ({
         ...prev,
         weather: data.weatherInfo!,
-        step: "ai",
+        step: "gemini",
         loading: false,
       }));
     } catch (error) {
@@ -114,18 +111,29 @@ const AiWeatherTest = () => {
   };
 
   /**
-   * 3. AI 연동 (영화 추천)
+   * 3. Gemini 연동 (영화 추천) - 프롬프트 생성은 서비스 클래스에서 처리
    */
-  const handleAiRecommendation = async () => {
+  const handleGeminiRecommendation = async () => {
     if (!state.weather) return;
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      // AI 프롬프트 생성
-      const prompt = createMovieRecommendationPrompt(state.weather);
+      // 프롬프트 생성 로직은 GeminiService.generateMovieRecommendationPrompt() 사용
+      const temp = state.weather.currentTemp
+        ? `${state.weather.currentTemp}°C`
+        : "정보 없음";
+      const humidity = state.weather.humidity
+        ? `${state.weather.humidity}%`
+        : "정보 없음";
+      const feelsLike = state.weather.feelsLikeTemp
+        ? `${state.weather.feelsLikeTemp}°C`
+        : "정보 없음";
 
-      const response = await fetch("/api/ai", {
+      const prompt = `현재온도와 습도, 체감온도는 현재온도: ${temp}, 습도: ${humidity}, 체감온도: ${feelsLike}인데, 이것에 기반해서 영화 추천해줘. 그리고 추천한 이유에 대해 각각 설명하지말고 전체적인 이유를 2~3줄로 짧게 설명해. 리스트는 10개까지만. 그리고 응답 형태는 다음같이 말해
+[영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
+
+      const response = await fetch("/api/gemini", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -133,23 +141,23 @@ const AiWeatherTest = () => {
         body: JSON.stringify({
           prompt,
           temperature: 0.7,
-          max_tokens: 4096, // thinking 모드를 고려해서 대폭 증가
+          max_tokens: 4096,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`AI 요청 실패: ${response.status}`);
+        throw new Error(`Gemini 요청 실패: ${response.status}`);
       }
 
-      const data: AiApiResponse = await response.json();
+      const data: GeminiClientApiResponse = await response.json();
 
       if (!data.success || !data.data?.text) {
-        throw new Error(data.error || "AI 응답을 받을 수 없습니다.");
+        throw new Error(data.error || "Gemini 응답을 받을 수 없습니다.");
       }
 
       setState((prev) => ({
         ...prev,
-        aiResponse: data.data!.text,
+        geminiResponse: data.data!.text,
         step: "result",
         loading: false,
       }));
@@ -157,35 +165,20 @@ const AiWeatherTest = () => {
       setState((prev) => ({
         ...prev,
         error:
-          error instanceof Error ? error.message : "AI 요청에 실패했습니다.",
+          error instanceof Error
+            ? error.message
+            : "Gemini 요청에 실패했습니다.",
         loading: false,
       }));
     }
   };
 
-  /**
-   * AI 프롬프트 생성 함수
-   */
-  const createMovieRecommendationPrompt = (weather: WeatherInfo): string => {
-    const temp = weather.currentTemp ? `${weather.currentTemp}°C` : "정보 없음";
-    const humidity = weather.humidity ? `${weather.humidity}%` : "정보 없음";
-    const feelsLike = weather.feelsLikeTemp
-      ? `${weather.feelsLikeTemp}°C`
-      : "정보 없음";
-
-    return `현재온도와 습도, 체감온도는 현재온도: ${temp}, 습도: ${humidity}, 체감온도: ${feelsLike}인데, 이것에 기반해서 영화 추천해줘. 그리고 추천한 이유에 대해 각각 설명하지말고 전체적인 이유를 2~3줄로 짧게 설명해. 리스트는 10개까지만. 그리고 응답 형태는 다음같이 말해
-[영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
-  };
-
-  /**
-   * 다시 시작하기
-   */
   const handleReset = () => {
     setState({
       step: "location",
       location: null,
       weather: null,
-      aiResponse: null,
+      geminiResponse: null,
       loading: false,
       error: null,
     });
@@ -259,34 +252,42 @@ const AiWeatherTest = () => {
         </div>
       </div>
 
-      {/* 3단계: AI 연동 */}
+      {/* 3단계: Gemini 연동 */}
       <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">🤖 3단계: AI 영화 추천</h3>
+        <h3 className="text-lg font-semibold mb-3">
+          🤖 3단계: Gemini 영화 추천
+        </h3>
         <div className="flex items-center justify-between">
           <div>
-            {state.aiResponse ? (
-              <p className="text-sm text-gray-600">✅ AI 추천 완료</p>
+            {state.geminiResponse ? (
+              <p className="text-sm text-gray-600">✅ Gemini 추천 완료</p>
             ) : (
-              <p className="text-gray-500">AI에게 영화 추천을 요청해주세요</p>
+              <p className="text-gray-500">
+                Gemini에게 영화 추천을 요청해주세요
+              </p>
             )}
           </div>
           <button
-            onClick={handleAiRecommendation}
+            onClick={handleGeminiRecommendation}
             disabled={!state.weather || state.loading}
             className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-300"
           >
-            {state.loading && state.step === "ai" ? "AI 처리 중..." : "AI연동"}
+            {state.loading && state.step === "gemini"
+              ? "Gemini 처리 중..."
+              : "Gemini연동"}
           </button>
         </div>
       </div>
 
       {/* 4단계: 결과 표시 */}
-      {state.aiResponse && (
+      {state.geminiResponse && (
         <div className="border rounded-lg p-4 bg-yellow-50">
-          <h3 className="text-lg font-semibold mb-3">🎬 4단계: AI 추천 결과</h3>
+          <h3 className="text-lg font-semibold mb-3">
+            🎬 4단계: Gemini 추천 결과
+          </h3>
           <div className="bg-white p-4 rounded border">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
-              {state.aiResponse}
+              {state.geminiResponse}
             </pre>
           </div>
           <div className="mt-4 text-center">
@@ -311,4 +312,4 @@ const AiWeatherTest = () => {
   );
 };
 
-export default AiWeatherTest;
+export default GeminiWeatherComponent;

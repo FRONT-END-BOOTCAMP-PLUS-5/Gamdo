@@ -1,13 +1,13 @@
-import { AiRepository } from "../../../domain/repositories/recommender/ai";
+import { GeminiRepository } from "../../../domain/repositories/recommender/gemini";
 import {
-  AiRequest,
-  AiResponse,
+  GeminiRequest,
+  GeminiResponse,
   GeminiApiRequest,
-} from "../../../domain/entities/recommender/ai";
+} from "../../../domain/entities/recommender/gemini";
 import { GeminiApi } from "../../gemini/GeminiApi";
 
-// AI 레포지토리 구현체
-export class AiRepositoryImpl implements AiRepository {
+// Gemini 레포지토리 구현체
+export class GeminiRepositoryImpl implements GeminiRepository {
   private geminiApi: GeminiApi;
 
   constructor() {
@@ -15,11 +15,11 @@ export class AiRepositoryImpl implements AiRepository {
   }
 
   /**
-   * AI 모델에 프롬프트를 전송하고 응답을 받아옵니다
-   * @param request AI 생성 요청 파라미터
-   * @returns AI 생성 결과
+   * Gemini 모델에 프롬프트를 전송하고 응답을 받아옵니다
+   * @param request Gemini 생성 요청 파라미터
+   * @returns Gemini 생성 결과
    */
-  async generateText(request: AiRequest): Promise<AiResponse> {
+  async generateText(request: GeminiRequest): Promise<GeminiResponse> {
     try {
       // API 설정 확인
       if (!this.geminiApi.isConfigured()) {
@@ -59,7 +59,7 @@ export class AiRepositoryImpl implements AiRepository {
       ) {
         return {
           success: false,
-          error: "AI 모델로부터 응답을 받을 수 없습니다.",
+          error: "Gemini 모델로부터 응답을 받을 수 없습니다.",
           timestamp: new Date().toISOString(),
         };
       }
@@ -71,7 +71,7 @@ export class AiRepositoryImpl implements AiRepository {
         return {
           success: false,
           error:
-            "AI 응답이 토큰 한계로 인해 잘렸습니다. 더 짧은 프롬프트를 사용해보세요.",
+            "Gemini 응답이 토큰 한계로 인해 잘렸습니다. 더 짧은 프롬프트를 사용해보세요.",
           timestamp: new Date().toISOString(),
         };
       }
@@ -92,7 +92,7 @@ export class AiRepositoryImpl implements AiRepository {
       } else {
         return {
           success: false,
-          error: "AI 모델 응답에서 텍스트를 찾을 수 없습니다.",
+          error: "Gemini 모델 응답에서 텍스트를 찾을 수 없습니다.",
           timestamp: new Date().toISOString(),
         };
       }
@@ -115,7 +115,7 @@ export class AiRepositoryImpl implements AiRepository {
         error:
           error instanceof Error
             ? error.message
-            : "AI 생성 중 오류가 발생했습니다.",
+            : "Gemini 생성 중 오류가 발생했습니다.",
         timestamp: new Date().toISOString(),
       };
     }

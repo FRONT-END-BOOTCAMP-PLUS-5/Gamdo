@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AiService } from "../../../../backend/application/recommender/GetAiResponseUseCase";
-import { AiRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommender/ai";
+import { GeminiService } from "../../../../backend/application/recommender/GetGeminiResponseUseCase";
+import { GeminiRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommender/gemini";
 
-// AI 응답 요청 인터페이스
-interface AiRequestBody {
+// Gemini 응답 요청 인터페이스
+interface GeminiRequestBody {
   prompt: string;
   temperature?: number;
   max_tokens?: number;
 }
 
 /**
- * AI 모델에 프롬프트를 전송하고 응답을 받아옵니다
- * POST /api/ai
+ * Gemini 모델에 프롬프트를 전송하고 응답을 받아옵니다
+ * POST /api/gemini
  */
 export async function POST(request: NextRequest) {
   try {
     // 요청 본문 파싱
-    const body: AiRequestBody = await request.json();
+    const body: GeminiRequestBody = await request.json();
 
     // 입력 검증
     if (!body.prompt || typeof body.prompt !== "string") {
@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 의존성 주입
-    const aiRepository = new AiRepositoryImpl();
-    const aiService = new AiService(aiRepository);
+    const geminiRepository = new GeminiRepositoryImpl();
+    const geminiService = new GeminiService(geminiRepository);
 
-    // AI 응답 생성
-    const result = await aiService.generateResponse(
+    // Gemini 응답 생성
+    const result = await geminiService.generateResponse(
       body.prompt,
       body.temperature,
       body.max_tokens
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "AI 응답 생성 중 서버 오류가 발생했습니다.",
+        error: "Gemini 응답 생성 중 서버 오류가 발생했습니다.",
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * 현재 온도에 대한 간단한 질문을 AI에게 전송합니다
- * GET /api/ai?type=temperature
+ * 현재 온도에 대한 간단한 질문을 Gemini에게 전송합니다
+ * GET /api/gemini?type=temperature
  */
 export async function GET(request: NextRequest) {
   try {
@@ -68,18 +68,18 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type");
 
     // 의존성 주입
-    const aiRepository = new AiRepositoryImpl();
-    const aiService = new AiService(aiRepository);
+    const geminiRepository = new GeminiRepositoryImpl();
+    const geminiService = new GeminiService(geminiRepository);
 
     let prompt: string;
 
     // 타입에 따른 프롬프트 생성
     switch (type) {
       case "temperature":
-        prompt = aiService.generateTemperatureQuestion();
+        prompt = geminiService.generateTemperatureQuestion();
         break;
       case "weather":
-        prompt = aiService.generateWeatherBasedPrompt();
+        prompt = geminiService.generateWeatherBasedPrompt();
         break;
       default:
         return NextResponse.json(
@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
         );
     }
 
-    // AI 응답 생성
-    const result = await aiService.generateResponse(prompt);
+    // Gemini 응답 생성
+    const result = await geminiService.generateResponse(prompt);
 
     // 성공 여부에 따른 응답 상태 코드 설정
     const statusCode = result.success ? 200 : 500;
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "AI 응답 생성 중 서버 오류가 발생했습니다.",
+        error: "Gemini 응답 생성 중 서버 오류가 발생했습니다.",
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

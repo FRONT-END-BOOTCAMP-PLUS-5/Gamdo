@@ -1,12 +1,12 @@
-// AI 생성 요청 인터페이스
-export interface AiRequest {
+// Gemini 생성 요청 인터페이스
+export interface GeminiRequest {
   prompt: string; // 사용자 프롬프트
   temperature?: number; // 생성 온도 (0.0 ~ 1.0)
   max_tokens?: number; // 최대 토큰 수
 }
 
-// AI 응답 인터페이스
-export interface AiResponse {
+// Gemini 응답 인터페이스
+export interface GeminiResponse {
   success: boolean;
   data?: {
     text: string; // 생성된 텍스트
@@ -55,4 +55,16 @@ export interface GeminiApiRequest {
     temperature?: number;
     maxOutputTokens?: number;
   };
+}
+
+// Gemini 클라이언트 API 응답 타입 (프론트엔드용)
+export interface GeminiClientApiResponse {
+  success: boolean;
+  data?: {
+    text: string;
+    tokens_used?: number;
+    model?: string;
+  };
+  error?: string;
+  timestamp: string;
 }
