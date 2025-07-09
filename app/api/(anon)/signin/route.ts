@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
       );
     }
     // 로그인 성공 시 토큰 생성 및 쿠키 세팅
-    const accessToken = createAccessToken(result.user.user_id as string);
-    const refreshToken = createRefreshToken(result.user.user_id as string);
+    const accessToken = createAccessToken({ userId: result.user.user_id! });
+    const refreshToken = createRefreshToken({ useId: result.user.user_id! });
     const response = NextResponse.json(result, { status: 200 });
     setAuthCookies(response, accessToken, refreshToken);
     return response;
