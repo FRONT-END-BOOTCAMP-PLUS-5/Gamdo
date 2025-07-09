@@ -7,13 +7,16 @@ import {
   LocationInfo,
   WeatherInfo,
 } from "../../domain/entities/recommender/weather";
+import { RecommendedMovie } from "../../domain/entities/recommender/movie";
 
 // UI 컴포넌트 상태 타입 (이 폴더 내에서만 사용)
 export interface GeminiWeatherTestState {
-  step: "location" | "weather" | "gemini" | "result";
+  step: "location" | "weather" | "gemini" | "result" | "movies";
   location: LocationInfo | null;
   weather: WeatherInfo | null;
   geminiResponse: string | null;
+  movieTitles: string[];
+  movieResults: RecommendedMovie[];
   loading: boolean;
   error: string | null;
 }
@@ -120,5 +123,77 @@ export class GeminiService {
 
     return `현재온도와 습도, 체감온도는 현재온도: ${temp}, 습도: ${humidity}, 체감온도: ${feelsLike}인데, 이것에 기반해서 영화 추천해줘. 그리고 추천한 이유에 대해 각각 설명하지말고 전체적인 이유를 2~3줄로 짧게 설명해. 리스트는 10개까지만. 그리고 응답 형태는 다음같이 말해
 [영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
+  }
+
+  /**
+   * AI 응답에서 영화 제목 목록을 추출합니다
+   * @param aiResponse AI에서 받은 응답 텍스트
+   * @returns 영화 제목 배열
+   */
+  parseMovieTitlesFromResponse(aiResponse: string): string[] {
+    try {
+      // 대괄호 안의 내용을 찾는 정규표현식
+      const bracketMatch = aiResponse.match(/\[([^\]]+)\]/);
+
+      if (!bracketMatch) {
+        // 대괄호가 없는 경우 줄 단위로 영화 제목 추출 시도
+        const lines = aiResponse.split("\n");
+        const movieTitles: string[] = [];
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          // 숫자로 시작하는 줄이나 "- " 로 시작하는 줄에서 영화 제목 추출
+          const numberMatch = trimmedLine.match(/^\d+\.\s*(.+)/);
+          const dashMatch = trimmedLine.match(/^-\s*(.+)/);
+
+          if (numberMatch) {
+            movieTitles.push(numberMatch[1].trim());
+          } else if (dashMatch) {
+            movieTitles.push(dashMatch[1].trim());
+          }
+        }
+
+        return movieTitles.length > 0 ? movieTitles : [];
+      }
+
+      // 대괄호 안의 내용을 쉼표로 분리
+      const movieTitles = bracketMatch[1]
+        .split(",")
+        .map((title) => title.trim())
+        .filter((title) => title.length > 0);
+
+      return movieTitles;
+    } catch (error) {
+      console.error("영화 제목 파싱 중 오류:", error);
+      return [];
+    }
+  }
+
+  /**
+   * 추출된 영화 제목들을 정리합니다 (특수문자 제거, 공백 정리)
+   * @param movieTitles 원본 영화 제목 배열
+   * @returns 정리된 영화 제목 배열
+   */
+  cleanMovieTitles(movieTitles: string[]): string[] {
+    return movieTitles
+      .map((title) => {
+        // 따옴표, 괄호 내용 제거, 앞뒤 공백 제거
+        return title
+          .replace(/["""'']/g, "") // 따옴표 제거
+          .replace(/\([^)]*\)/g, "") // 괄호와 괄호 안 내용 제거
+          .replace(/\[[^\]]*\]/g, "") // 대괄호와 대괄호 안 내용 제거
+          .trim();
+      })
+      .filter((title) => title.length > 0);
+  }
+
+  /**
+   * AI 응답에서 영화 제목을 추출하고 정리하는 통합 메서드
+   * @param aiResponse AI에서 받은 응답 텍스트
+   * @returns 정리된 영화 제목 배열
+   */
+  extractMovieTitles(aiResponse: string): string[] {
+    const rawTitles = this.parseMovieTitlesFromResponse(aiResponse);
+    return this.cleanMovieTitles(rawTitles);
   }
 }
