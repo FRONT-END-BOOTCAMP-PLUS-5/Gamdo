@@ -1,7 +1,11 @@
 import { UserRepository } from "../../../domain/repositories/UserRepository";
 import bcrypt from "bcrypt";
-import { SigninRequestDto, SigninResponseDto } from "../dtos/SigninDto";
-import { User } from "@/backend/domain/entities/User";
+import {
+  SigninRequestDto,
+  SigninResponseDto,
+  UserWithoutSensitive,
+} from "../dtos/SigninDto";
+import { validateEmail } from "@/utils/validation";
 
 export class SigninUsecase {
   constructor(private userRepository: UserRepository) {}
@@ -9,9 +13,12 @@ export class SigninUsecase {
   async execute(data: SigninRequestDto): Promise<SigninResponseDto> {
     const { login_id, password } = data;
 
+    if (!validateEmail(login_id)) {
+      throw new Error("이메일 형식의 아이디만 입력할 수 있습니다.");
+    }
+
     // 1. login_id로 유저 조회
     const user = await this.userRepository.getUserByLoginId(login_id);
-    console.log(user);
     if (!user) {
       return { success: false, message: "존재하지 않는 아이디입니다." };
     }
@@ -24,7 +31,7 @@ export class SigninUsecase {
       };
     }
     // 3. 로그인 성공
-    const userWithoutSensitive: Omit<User, "password" | "created_at"> = {
+    const userWithoutSensitive: UserWithoutSensitive = {
       user_id: user.user_id,
       name: user.name,
       login_id: user.login_id,

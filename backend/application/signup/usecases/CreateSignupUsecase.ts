@@ -56,7 +56,7 @@ export class CreateSignupUseCase {
       hashedPassword,
       dto.nickname,
       dto.profile_image ?? null,
-      "user" // 우선은 role user 고정
+      "user" // role "user" 고정
     );
 
     // 3. DB에 저장

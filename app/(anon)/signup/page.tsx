@@ -5,11 +5,11 @@ export default function SignupPage() {
     const response = await fetch("/api/signup", {
       method: "POST",
       body: JSON.stringify({
-        name: "테스트유저01",
+        name: "테스트유저02",
         // login_id: "test" + Math.floor(Math.random() * 10000) + "@example.com",
-        login_id: "test01@example.com",
+        login_id: "test02@example.com",
         password: "testpassword123!",
-        nickname: "test01",
+        nickname: "test02",
         profile_image: null,
       }),
     });
