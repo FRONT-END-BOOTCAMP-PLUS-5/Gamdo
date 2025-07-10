@@ -2,7 +2,7 @@ import { GeminiRepository } from "../../../domain/repositories/recommender/gemin
 import {
   GeminiRequest,
   GeminiResponse,
-  GeminiApiRequest,
+  GeminiApiResponse,
 } from "../../../domain/entities/recommender/gemini";
 import { GeminiApi } from "../../gemini/GeminiApi";
 
@@ -31,7 +31,7 @@ export class GeminiRepositoryImpl implements GeminiRepository {
       }
 
       // 도메인 요청을 Gemini API 요청으로 변환
-      const geminiRequest: GeminiApiRequest = {
+      const geminiRequest = {
         contents: [
           {
             parts: [
@@ -43,14 +43,13 @@ export class GeminiRepositoryImpl implements GeminiRepository {
         ],
         generationConfig: {
           temperature: request.temperature || 0.7,
-          maxOutputTokens: request.max_tokens || 4096, // thinking 모드를 고려해서 대폭 증가
+          maxOutputTokens: request.max_tokens || 1000,
         },
       };
 
       // Gemini API 호출
-      const geminiResponse = await this.geminiApi.generateContent(
-        geminiRequest
-      );
+      const geminiResponse: GeminiApiResponse =
+        await this.geminiApi.generateContent(geminiRequest);
 
       // 응답 유효성 검사
       if (
@@ -66,28 +65,12 @@ export class GeminiRepositoryImpl implements GeminiRepository {
 
       const candidate = geminiResponse.candidates[0];
 
-      // finishReason 확인 - thinking 모드에서 MAX_TOKENS로 잘릴 수 있음
-      if (candidate.finishReason === "MAX_TOKENS") {
-        return {
-          success: false,
-          error:
-            "Gemini 응답이 토큰 한계로 인해 잘렸습니다. 더 짧은 프롬프트를 사용해보세요.",
-          timestamp: new Date().toISOString(),
-        };
-      }
-
-      // Gemini 2.5 thinking 모드 대응: parts가 없는 경우 처리
+      // 응답 텍스트 추출
       let generatedText = "";
 
-      if (
-        candidate.content &&
-        candidate.content.parts &&
-        candidate.content.parts.length > 0
-      ) {
-        // 일반적인 응답 구조
+      if (candidate.content?.parts && candidate.content.parts.length > 0) {
         generatedText = candidate.content.parts[0].text;
       } else if (candidate.text) {
-        // 일부 Gemini 버전에서 직접 text 필드 사용
         generatedText = candidate.text;
       } else {
         return {
