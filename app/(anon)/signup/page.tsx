@@ -6,11 +6,11 @@ export default function SignupPage() {
       method: "POST",
       body: JSON.stringify({
         name: "테스트유저02",
-        // login_id: "test" + Math.floor(Math.random() * 10000) + "@example.com",
-        login_id: "test02@example.com",
+        // loginId: "test" + Math.floor(Math.random() * 10000) + "@example.com",
+        loginId: "test02@example.com",
         password: "testpassword123!",
         nickname: "test02",
-        profile_image: null,
+        profileImage: null,
       }),
     });
     const data = await response.json();
@@ -20,7 +20,7 @@ export default function SignupPage() {
   const handleEmailCheck = async () => {
     const response = await fetch("/api/signup/email-exists", {
       method: "POST",
-      body: JSON.stringify({ login_id: "test1531@example.com" }),
+      body: JSON.stringify({ loginId: "test1531@example.com" }),
     });
     const data = await response.json();
     console.log(data);
@@ -39,7 +39,7 @@ export default function SignupPage() {
     const response = await fetch("/api/signin", {
       method: "POST",
       body: JSON.stringify({
-        login_id: "test01@example.com",
+        loginId: "test01@example.com",
         password: "testpassword123!",
       }),
     });

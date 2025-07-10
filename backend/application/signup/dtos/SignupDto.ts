@@ -1,17 +1,17 @@
 export interface SignupRequestDto {
   name: string;
-  login_id: string;
+  loginId: string;
   password: string;
   nickname: string;
-  profile_image: string | null;
+  profileImage: string | null;
 }
 
 export interface SignupResponseDto {
-  user_id: string;
+  userId: string;
   name: string;
-  login_id: string;
+  loginId: string;
   nickname: string;
-  profile_image: string | null;
+  profileImage: string | null;
   role: string;
-  created_at: string;
+  createdAt: string;
 }

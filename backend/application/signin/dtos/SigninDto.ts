@@ -1,9 +1,9 @@
 import { User } from "../../../domain/entities/User";
 
-export type UserWithoutSensitive = Omit<User, "password" | "created_at">;
+export type UserWithoutSensitive = Omit<User, "password" | "createdAt">;
 
 export interface SigninRequestDto {
-  login_id: string;
+  loginId: string;
   password: string;
 }
 

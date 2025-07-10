@@ -11,14 +11,14 @@ export class SigninUsecase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(data: SigninRequestDto): Promise<SigninResponseDto> {
-    const { login_id, password } = data;
+    const { loginId, password } = data;
 
-    if (!validateEmail(login_id)) {
+    if (!validateEmail(loginId)) {
       throw new Error("이메일 형식의 아이디만 입력할 수 있습니다.");
     }
 
     // 1. login_id로 유저 조회
-    const user = await this.userRepository.getUserByLoginId(login_id);
+    const user = await this.userRepository.getUserByLoginId(loginId);
     if (!user) {
       return { success: false, message: "존재하지 않는 아이디입니다." };
     }
@@ -32,11 +32,11 @@ export class SigninUsecase {
     }
     // 3. 로그인 성공
     const userWithoutSensitive: UserWithoutSensitive = {
-      user_id: user.user_id,
+      userId: user.userId,
       name: user.name,
-      login_id: user.login_id,
+      loginId: user.loginId,
       nickname: user.nickname,
-      profile_image: user.profile_image,
+      profileImage: user.profileImage,
       role: user.role,
     };
 
