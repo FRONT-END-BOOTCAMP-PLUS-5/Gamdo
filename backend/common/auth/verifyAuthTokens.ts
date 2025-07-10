@@ -1,17 +1,13 @@
 import { NextRequest } from "next/server";
-import { verifyAccessToken, verifyRefreshToken } from "./jwt";
+import { verifyAccessToken } from "./jwt";
 
 type TokenStatusResult =
   | { code: "ok"; status: number }
-  | { code: "access_expired"; status: number }
-  | { code: "refresh_expired"; status: number }
   | { code: "no_token"; status: number }
   | { code: "invalid"; status: number };
 
 export function verifyAuthTokens(req: NextRequest): TokenStatusResult {
-  const reqAuthHeader = req.headers.get("authorization");
-  const reqAccessToken = reqAuthHeader?.split(" ")[1]; // Bearer <token>
-  const reqRefreshToken = req.cookies.get("refresh_token")?.value;
+  const reqAccessToken = req.cookies.get("access_token")?.value;
 
   if (!reqAccessToken) {
     return { code: "no_token", status: 401 };
@@ -19,17 +15,8 @@ export function verifyAuthTokens(req: NextRequest): TokenStatusResult {
 
   try {
     verifyAccessToken(reqAccessToken);
-    return { code: "ok", status: 200 };
+    return { code: "ok", status: 200 }; //액세스 토큰 있으면 토큰유효
   } catch {
-    if (reqRefreshToken) {
-      try {
-        verifyRefreshToken(reqRefreshToken);
-        return { code: "access_expired", status: 401 };
-      } catch {
-        return { code: "refresh_expired", status: 401 };
-      }
-    } else {
-      return { code: "invalid", status: 401 };
-    }
+    return { code: "invalid", status: 401 }; //액세스 토큰 없음
   }
 }
