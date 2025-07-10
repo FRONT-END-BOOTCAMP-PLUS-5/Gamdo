@@ -1,17 +1,6 @@
 import { NextResponse } from "next/server";
 
-export function setAuthCookies(
-  response: NextResponse,
-  accessToken: string,
-  refreshToken: string
-) {
-  response.cookies.set("access_token", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60, // 1시간
-  });
+export function setAuthCookies(response: NextResponse, refreshToken: string) {
   response.cookies.set("refresh_token", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -22,6 +11,11 @@ export function setAuthCookies(
 }
 
 export function clearAuthCookies(response: NextResponse) {
-  response.cookies.set("access_token", "", { maxAge: 0, path: "/" });
-  response.cookies.set("refresh_token", "", { maxAge: 0, path: "/" });
+  response.cookies.set("refresh_token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
 }
