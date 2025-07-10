@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SbUserRepository } from "../../../../backend/infrastructure/repositories/SbUserRepository";
 import { supabase } from "@/utils/supabase/client";
 import { SigninUsecase } from "@/backend/application/signin/usecases/SigninUsecase";
 import {
@@ -7,6 +6,7 @@ import {
   createRefreshToken,
 } from "@/backend/common/auth/jwt";
 import { setAuthCookies } from "@/backend/common/auth/cookies";
+import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRepository";
 
 export async function POST(req: NextRequest) {
   try {
