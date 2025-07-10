@@ -19,7 +19,7 @@ export class CreateSignupUseCase {
         "이름은 10자리 이내 한글, 영어, 숫자만 입력할 수 있습니다. (한글 자음/모음 분리 불가)"
       );
     }
-    if (!validateEmail(dto.login_id)) {
+    if (!validateEmail(dto.loginId)) {
       throw new Error("이메일 형식의 아이디만 입력할 수 있습니다.");
     }
     if (!validatePassword(dto.password)) {
@@ -34,7 +34,7 @@ export class CreateSignupUseCase {
     }
 
     // 1. 이메일 중복 체크
-    const emailExists = await this.userRepository.isEmailExists(dto.login_id);
+    const emailExists = await this.userRepository.isEmailExists(dto.loginId);
     if (emailExists) {
       throw new Error("이미 사용 중인 이메일입니다.");
     }
@@ -52,11 +52,11 @@ export class CreateSignupUseCase {
     // 2. User 엔티티 생성
     const user = new User(
       dto.name,
-      dto.login_id,
+      dto.loginId,
       hashedPassword,
       dto.nickname,
-      dto.profile_image ?? null,
-      "user" // 우선은 role user 고정
+      dto.profileImage ?? null,
+      "user" // role "user" 고정
     );
 
     // 3. DB에 저장
@@ -64,13 +64,13 @@ export class CreateSignupUseCase {
 
     // 4. 응답 DTO로 변환
     return {
-      user_id: created.user_id!,
+      userId: created.userId!,
       name: created.name,
-      login_id: created.login_id,
+      loginId: created.loginId,
       nickname: created.nickname,
-      profile_image: created.profile_image,
+      profileImage: created.profileImage,
       role: created.role,
-      created_at: created.created_at!,
+      createdAt: created.createdAt!,
     };
   }
 }
