@@ -3,7 +3,7 @@ import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRe
 export class CheckEmailExistsUsecase {
   constructor(private userRepository: SbUserRepository) {}
 
-  async execute(login_id: string): Promise<boolean> {
-    return this.userRepository.isEmailExists(login_id);
+  async execute(loginId: string): Promise<boolean> {
+    return this.userRepository.isEmailExists(loginId);
   }
 }
