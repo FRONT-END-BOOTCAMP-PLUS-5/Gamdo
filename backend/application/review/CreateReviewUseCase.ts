@@ -5,7 +5,7 @@ export class CreateReviewUseCase {
   constructor(private reviewRepository: ReviewRepository) {}
 
   async execute(
-    userId: number,
+    userId: string,
     movieId: string,
     content: string
   ): Promise<Review> {
