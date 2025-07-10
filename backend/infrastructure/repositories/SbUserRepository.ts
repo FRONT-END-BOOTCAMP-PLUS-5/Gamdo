@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { UserRepository } from "../../domain/repositories/UserRepository";
 import { User } from "../../domain/entities/User";
+import { UpdateUserInfoDto } from "@/backend/application/user/dtos/UpdateUserInfoDto";
 
 export class SbUserRepository implements UserRepository {
   constructor(private supabase: SupabaseClient) {}
@@ -74,6 +75,28 @@ export class SbUserRepository implements UserRepository {
       .from("users")
       .select()
       .eq("user_id", user_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    return new User(
+      data.name,
+      data.login_id,
+      data.password,
+      data.nickname,
+      data.profile_image,
+      data.role,
+      data.user_id,
+      data.created_at
+    );
+  }
+
+  // userId로 회원 정보(nickname, password) 수정
+  async updateUserInfo(userInfo: UpdateUserInfoDto): Promise<User | null> {
+    const { data, error } = await this.supabase
+      .from("users")
+      .update({ nickname: userInfo.nickname, password: userInfo.password })
+      .eq("user_id", userInfo.userId)
+      .select()
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!data) return null;

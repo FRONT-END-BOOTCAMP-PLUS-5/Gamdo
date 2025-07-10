@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/utils/supabase/client";
 import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRepository";
 import { GetUserInfoUsecase } from "@/backend/application/user/usecase/GetUserInfoUsecase";
+import { UpdateUserInfoUsecase } from "@/backend/application/user/usecase/UpdateUserInfoUsecase";
 import { UserWithoutSensitive } from "@/backend/application/signin/dtos/SigninDto";
 import { verifyAccessToken } from "@/backend/common/auth/jwt";
 
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
     const userRepository = new SbUserRepository(supabase);
     const getUserInfoUsecase = new GetUserInfoUsecase(userRepository);
     const user = await getUserInfoUsecase.execute(userId);
-    // 민감 정보 제외
+
     const userWithoutSensitive: UserWithoutSensitive = {
       userId: user.userId!,
       name: user.name,
@@ -43,6 +44,29 @@ export async function GET(req: NextRequest) {
       role: user.role,
     };
     return NextResponse.json({ user: userWithoutSensitive }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 404 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const { userId, nickname, password } = await req.json();
+    if (!userId || !nickname || !password) {
+      return NextResponse.json(
+        { error: "userId, nickname, password are required" },
+        { status: 400 }
+      );
+    }
+    const userRepository = new SbUserRepository(supabase);
+    const updateUserInfoUsecase = new UpdateUserInfoUsecase(userRepository);
+    const user = await updateUserInfoUsecase.execute(
+      userId,
+      nickname,
+      password
+    );
+    return NextResponse.json({ user }, { status: 200 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 404 });
