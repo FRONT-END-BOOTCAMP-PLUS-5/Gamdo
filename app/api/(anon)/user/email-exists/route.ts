@@ -3,9 +3,10 @@ import { supabase } from "@/utils/supabase/client";
 import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRepository";
 import { CheckEmailExistsUsecase } from "@/backend/application/signup/usecases/CheckEmailExistsUsecase";
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { loginId } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const loginId = searchParams.get("loginId");
     if (!loginId) {
       return NextResponse.json(
         { error: "이메일 형식의 아이디를 입력해주세요." },

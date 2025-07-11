@@ -3,9 +3,10 @@ import { supabase } from "@/utils/supabase/client";
 import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRepository";
 import { CheckNicknameExistsUsecase } from "@/backend/application/signup/usecases/CheckNicknameExistsUsecase";
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { nickname } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const nickname = searchParams.get("nickname");
     if (!nickname) {
       return NextResponse.json(
         { error: "닉네임을 입력해주세요." },
