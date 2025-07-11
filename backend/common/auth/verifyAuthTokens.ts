@@ -15,8 +15,8 @@ export function verifyAuthTokens(req: NextRequest): TokenStatusResult {
 
   try {
     verifyAccessToken(reqAccessToken);
-    return { code: "ok", status: 200 }; //액세스 토큰 있으면 토큰유효
+    return { code: "ok", status: 200 };
   } catch {
-    return { code: "invalid", status: 401 }; //액세스 토큰 없음
+    return { code: "invalid", status: 401 };
   }
 }

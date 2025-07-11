@@ -2,6 +2,7 @@ import { User } from "@/backend/domain/entities/User";
 import { UserRepository } from "@/backend/domain/repositories/UserRepository";
 import { UpdateUserInfoDto } from "../dtos/UpdateUserInfoDto";
 import { validatePassword, validateNickname } from "@/utils/validation";
+import { hashPassword } from "@/utils/hash";
 
 export class UpdateUserInfoUsecase {
   constructor(private userRepository: UserRepository) {}
@@ -27,7 +28,8 @@ export class UpdateUserInfoUsecase {
       throw new Error("이미 사용 중인 닉네임입니다.");
     }
 
-    const userInfo = new UpdateUserInfoDto(userId, nickname, password);
+    const hashedPassword = await hashPassword(password);
+    const userInfo = new UpdateUserInfoDto(userId, nickname, hashedPassword);
     const user = await this.userRepository.updateUserInfo(userInfo);
     if (!user) {
       throw new Error("User not found");

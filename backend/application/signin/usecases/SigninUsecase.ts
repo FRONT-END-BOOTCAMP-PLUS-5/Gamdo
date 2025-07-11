@@ -1,11 +1,11 @@
 import { UserRepository } from "../../../domain/repositories/UserRepository";
-import bcrypt from "bcrypt";
 import {
   SigninRequestDto,
   SigninResponseDto,
   UserWithoutSensitive,
 } from "../dtos/SigninDto";
 import { validateEmail } from "@/utils/validation";
+import { comparePassword } from "@/utils/hash";
 
 export class SigninUsecase {
   constructor(private userRepository: UserRepository) {}
@@ -23,7 +23,7 @@ export class SigninUsecase {
       return { success: false, message: "존재하지 않는 아이디입니다." };
     }
     // 2. 비밀번호 비교
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       return {
         success: false,
