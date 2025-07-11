@@ -4,7 +4,7 @@ import {
   GeminiResponse,
   GeminiApiRequest,
 } from "../../../domain/entities/recommender/gemini";
-import { GeminiApi } from "../../gemini/GeminiApi";
+import { GeminiApi } from "../../../../utils/supabase/gemini/GeminiApi";
 
 // Gemini 레포지토리 구현체
 export class GeminiRepositoryImpl implements GeminiRepository {
