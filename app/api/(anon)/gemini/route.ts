@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         prompt = geminiService.generateTemperatureQuestion();
         break;
       case "weather":
-        prompt = geminiService.generateWeatherBasedPrompt();
+        prompt = "현재 날씨는 어떤가요? 온도와 날씨 상태를 알려주세요.";
         break;
       default:
         return NextResponse.json(

@@ -9,9 +9,21 @@ import {
 } from "../../domain/entities/recommender/weather";
 import { RecommendedMovie } from "../../domain/entities/recommender/movie";
 
+// 사용자 선택 정보 타입 정의
+export type UserSelectionInfo = {
+  [key: string]: string;
+};
+
 // UI 컴포넌트 상태 타입 (이 폴더 내에서만 사용)
 export interface GeminiWeatherTestState {
-  step: "location" | "weather" | "gemini" | "result" | "movies";
+  step:
+    | "location"
+    | "weather"
+    | "weather_complete"
+    | "user_selection"
+    | "gemini"
+    | "result"
+    | "movies";
   location: LocationInfo | null;
   weather: WeatherInfo | null;
   geminiResponse: string | null;
@@ -101,15 +113,6 @@ export class GeminiService {
   }
 
   /**
-   * 날씨 정보를 바탕으로 Gemini에게 질문할 프롬프트를 생성합니다
-   * @returns 날씨 기반 프롬프트
-   */
-  generateWeatherBasedPrompt(): string {
-    // 일단 기본 프롬프트 반환 (날씨 정보 연동 전)
-    return "현재 날씨는 어떤가요? 온도와 날씨 상태를 알려주세요.";
-  }
-
-  /**
    * 날씨 정보를 바탕으로 영화 추천 프롬프트를 생성합니다
    * @param weather 날씨 정보
    * @returns 영화 추천 프롬프트
@@ -122,6 +125,51 @@ export class GeminiService {
       : "정보 없음";
 
     return `현재온도: ${temp}, 습도: ${humidity}, 체감온도: ${feelsLike}인데, 이것에 기반해서 영화 추천해줘. 리스트는 10개까지만. 응답할 때 너의 사족은 필요없어. 그냥 영화 제목만 말하면 돼 다음과 같이 말해.
+[영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
+  }
+
+  /**
+   * 날씨 정보와 사용자 선택 정보를 바탕으로 향상된 영화 추천 프롬프트를 생성합니다
+   * @param weather 날씨 정보
+   * @param userSelection 사용자 선택 정보
+   * @returns 향상된 영화 추천 프롬프트
+   */
+  generateEnhancedMovieRecommendationPrompt(
+    weather: WeatherInfo,
+    userSelection: UserSelectionInfo
+  ): string {
+    const temp = weather.currentTemp ? `${weather.currentTemp}°C` : "정보 없음";
+    const humidity = weather.humidity ? `${weather.humidity}%` : "정보 없음";
+    const feelsLike = weather.feelsLikeTemp
+      ? `${weather.feelsLikeTemp}°C`
+      : "정보 없음";
+
+    // 사용자 선택 정보를 텍스트로 변환
+    const userPreferences = Object.entries(userSelection)
+      .map(([categoryId, value]) => {
+        // 카테고리 이름을 사용자 친화적으로 변환
+        const categoryNames: { [key: string]: string } = {
+          mood: "현재 기분",
+          time: "시청 시간대",
+          genre: "선호 장르",
+          companion: "함께 볼 사람",
+          age_group: "연령대",
+          duration: "영화 길이",
+        };
+
+        const categoryName = categoryNames[categoryId] || categoryId;
+        return `${categoryName}: ${value}`;
+      })
+      .join(", ");
+
+    return `현재 날씨 정보: 온도 ${temp}, 습도 ${humidity}, 체감온도 ${feelsLike}
+사용자 선호 정보: ${userPreferences}
+
+위 정보를 바탕으로 최적의 영화 10개를 추천해주세요. 
+- 날씨와 사용자의 모든 선호 정보를 종합적으로 고려해주세요
+- 추천 이유는 2-3줄로 간단히 설명해주세요
+- 영화 제목은 다음 형식으로 응답해주세요:
+
 [영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
   }
 
