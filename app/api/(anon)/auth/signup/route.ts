@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SbUserRepository } from "../../../../backend/infrastructure/repositories/SbUserRepository";
 import { supabase } from "@/utils/supabase/client";
-import { CreateSignupUseCase } from "../../../../backend/application/signup/usecases/CreateSignupUsecase";
+import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRepository";
+import { CreateSignupUseCase } from "@/backend/application/signup/usecases/CreateSignupUsecase";
 
 export async function POST(req: NextRequest) {
   try {
