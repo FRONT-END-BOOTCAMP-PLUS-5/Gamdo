@@ -1,13 +1,13 @@
-import { GeminiRepository } from "../../domain/repositories/recommender/gemini";
+import { GeminiRepository } from "../../domain/repositories/recommenders/gemini";
 import {
   GeminiRequest,
   GeminiResponse,
-} from "../../domain/entities/recommender/gemini";
+} from "../../domain/entities/recommenders/gemini";
 import {
   LocationInfo,
   WeatherInfo,
-} from "../../domain/entities/recommender/weather";
-import { RecommendedMovie } from "../../domain/entities/recommender/movie";
+} from "../../domain/entities/recommenders/weather";
+import { RecommendedMovie } from "../../domain/entities/recommenders/movie";
 
 // 사용자 선택 정보 타입 정의
 export type UserSelectionInfo = {
@@ -243,5 +243,77 @@ export class GeminiService {
   extractMovieTitles(aiResponse: string): string[] {
     const rawTitles = this.parseMovieTitlesFromResponse(aiResponse);
     return this.cleanMovieTitles(rawTitles);
+  }
+
+  /**
+   * 날씨 정보와 사용자 선택 정보를 바탕으로 영화 추천을 생성합니다 (통합 메서드)
+   * 프롬프트 생성부터 Gemini 호출까지 모든 비즈니스 로직을 처리합니다
+   * @param weather 날씨 정보
+   * @param userSelection 사용자 선택 정보
+   * @param temperature 생성 온도 (기본값: 0.7)
+   * @param max_tokens 최대 토큰 수 (기본값: 4096)
+   * @returns 영화 추천 결과 (Gemini 응답 + 추출된 영화 제목)
+   */
+  async generateMovieRecommendation(
+    weather: WeatherInfo,
+    userSelection: UserSelectionInfo,
+    temperature: number = 0.7,
+    max_tokens: number = 4096
+  ): Promise<{
+    success: boolean;
+    data?: {
+      geminiResponse: string;
+      movieTitles: string[];
+      tokens_used?: number;
+      model?: string;
+    };
+    error?: string;
+    timestamp: string;
+  }> {
+    try {
+      // 1. 비즈니스 로직: 프롬프트 생성
+      const prompt = this.generateEnhancedMovieRecommendationPrompt(
+        weather,
+        userSelection
+      );
+
+      // 2. Gemini 응답 생성
+      const geminiResult = await this.generateResponse(
+        prompt,
+        temperature,
+        max_tokens
+      );
+
+      if (!geminiResult.success || !geminiResult.data?.text) {
+        return {
+          success: false,
+          error: geminiResult.error || "Gemini 응답을 받을 수 없습니다.",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      // 3. 비즈니스 로직: 영화 제목 추출
+      const movieTitles = this.extractMovieTitles(geminiResult.data.text);
+
+      return {
+        success: true,
+        data: {
+          geminiResponse: geminiResult.data.text,
+          movieTitles,
+          tokens_used: geminiResult.data.tokens_used,
+          model: geminiResult.data.model,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "영화 추천 생성 중 오류가 발생했습니다.",
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 }

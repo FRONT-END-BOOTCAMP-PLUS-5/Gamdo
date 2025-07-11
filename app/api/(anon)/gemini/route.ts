@@ -1,24 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GeminiService } from "../../../../backend/application/recommender/GetGeminiResponseUseCase";
-import { GeminiRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommender/gemini";
+import { GeminiService } from "../../../../backend/application/recommenders/GetGeminiResponseUseCase";
+import { GeminiRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommenders/gemini";
+import { WeatherInfo } from "../../../../backend/domain/entities/recommenders/weather";
 
-// Gemini 응답 요청 인터페이스
+// Gemini 응답 요청 인터페이스 (클린 아키텍처 준수)
 interface GeminiRequestBody {
-  prompt: string;
+  // 🔹 기존 방식: 직접 프롬프트 전달
+  prompt?: string;
   temperature?: number;
   max_tokens?: number;
+
+  // 🔹 새로운 방식: 영화 추천 (백엔드 UseCase 활용)
+  type?: "movie-recommendation";
+  weather?: WeatherInfo;
+  userSelection?: { [key: string]: string };
 }
 
 /**
- * Gemini 모델에 프롬프트를 전송하고 응답을 받아옵니다
+ * Gemini 모델에 요청을 전송하고 응답을 받아옵니다
  * POST /api/gemini
+ *
+ * 🏗️ 클린 아키텍처 준수:
+ * - 라우터: 요청 분기 및 백엔드 UseCase 호출
+ * - UseCase: 모든 비즈니스 로직 처리
  */
 export async function POST(request: NextRequest) {
   try {
     // 요청 본문 파싱
     const body: GeminiRequestBody = await request.json();
 
-    // 입력 검증
+    // 의존성 주입 (공통)
+    const geminiRepository = new GeminiRepositoryImpl();
+    const geminiService = new GeminiService(geminiRepository);
+
+    // 🎬 영화 추천 요청 처리 (클린 아키텍처)
+    if (body.type === "movie-recommendation") {
+      // 입력 검증
+      if (!body.weather) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "날씨 정보가 필요합니다.",
+            timestamp: new Date().toISOString(),
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!body.userSelection || Object.keys(body.userSelection).length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "사용자 선택 정보가 필요합니다.",
+            timestamp: new Date().toISOString(),
+          },
+          { status: 400 }
+        );
+      }
+
+      // 🏗️ 백엔드 UseCase 호출 (모든 비즈니스 로직은 UseCase에서 처리)
+      const result = await geminiService.generateMovieRecommendation(
+        body.weather,
+        body.userSelection,
+        body.temperature || 0.7,
+        body.max_tokens || 4096
+      );
+
+      const statusCode = result.success ? 200 : 500;
+      return NextResponse.json(result, { status: statusCode });
+    }
+
+    // 📝 기존 직접 프롬프트 방식 (하위 호환성 유지)
     if (!body.prompt || typeof body.prompt !== "string") {
       return NextResponse.json(
         {
@@ -30,22 +82,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 의존성 주입
-    const geminiRepository = new GeminiRepositoryImpl();
-    const geminiService = new GeminiService(geminiRepository);
-
-    // Gemini 응답 생성
+    // Gemini 응답 생성 (기존 방식)
     const result = await geminiService.generateResponse(
       body.prompt,
       body.temperature,
       body.max_tokens
     );
 
-    // 성공 여부에 따른 응답 상태 코드 설정
     const statusCode = result.success ? 200 : 500;
-
     return NextResponse.json(result, { status: statusCode });
-  } catch {
+  } catch (error) {
+    console.error("Gemini API 오류:", error);
     return NextResponse.json(
       {
         success: false,

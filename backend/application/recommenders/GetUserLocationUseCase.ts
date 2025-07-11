@@ -1,5 +1,5 @@
-import { convertToGrid } from "../../../utils/supabase/recommender/coordinate-converter";
-import { LocationInfo } from "../../domain/entities/recommender/weather";
+import { convertToGrid } from "../../../utils/supabase/recommenders/coordinate-converter";
+import { LocationInfo } from "../../domain/entities/recommenders/weather";
 
 // 사용자 위치 정보 서비스 클래스
 export class GetUserLocationService {

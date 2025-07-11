@@ -1,7 +1,7 @@
 import {
   MovieInfo,
   RecommendedMovie,
-} from "../../domain/entities/recommender/movie";
+} from "../../domain/entities/recommenders/movie";
 import { SearchRepositoryImpl } from "../../infrastructure/repositories/SearchRepositoryImpl";
 import { MovieOrTvResult } from "../../domain/entities/SearchResult";
 

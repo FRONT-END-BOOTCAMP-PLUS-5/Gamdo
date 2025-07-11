@@ -6,7 +6,7 @@ import {
   MoviePosterRequest,
   MoviePosterResponse,
   MovieImageConfig,
-} from "../../entities/recommender/movie";
+} from "../../entities/recommenders/movie";
 
 // 영화 정보 리포지토리 인터페이스
 export interface MovieRepository {

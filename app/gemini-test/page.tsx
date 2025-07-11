@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { WeatherApiResponse } from "../../backend/domain/entities/recommender/weather";
-import { GeminiClientApiResponse } from "../../backend/domain/entities/recommender/gemini";
-import { GeminiWeatherTestState } from "../../backend/application/recommender/GetGeminiResponseUseCase";
-import { getUserLocationService } from "../../backend/application/recommender/GetUserLocationUseCase";
-import { RecommendedMovie } from "../../backend/domain/entities/recommender/movie";
+import { WeatherApiResponse } from "../../backend/domain/entities/recommenders/weather";
+import { GeminiWeatherTestState } from "../../backend/application/recommenders/GetGeminiResponseUseCase";
+import { getUserLocationService } from "../../backend/application/recommenders/GetUserLocationUseCase";
+import { RecommendedMovie } from "../../backend/domain/entities/recommenders/movie";
 import {
   SearchResult,
   MovieOrTvResult,
@@ -308,53 +307,6 @@ const GeminiWeatherComponent = () => {
   });
 
   /**
-   * AI 응답에서 영화 제목을 추출합니다
-   */
-  const extractMovieTitles = (aiResponse: string): string[] => {
-    // 임시로 직접 구현 (GeminiService 로직 복사)
-    try {
-      const bracketMatch = aiResponse.match(/\[([^\]]+)\]/);
-
-      if (!bracketMatch) {
-        const lines = aiResponse.split("\n");
-        const movieTitles: string[] = [];
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          const numberMatch = trimmedLine.match(/^\d+\.\s*(.+)/);
-          const dashMatch = trimmedLine.match(/^-\s*(.+)/);
-
-          if (numberMatch) {
-            movieTitles.push(numberMatch[1].trim());
-          } else if (dashMatch) {
-            movieTitles.push(dashMatch[1].trim());
-          }
-        }
-
-        return movieTitles.length > 0 ? movieTitles : [];
-      }
-
-      const movieTitles = bracketMatch[1]
-        .split(",")
-        .map((title) => title.trim())
-        .filter((title) => title.length > 0);
-
-      return movieTitles
-        .map((title) => {
-          return title
-            .replace(/["""'']/g, "") // 따옴표 제거
-            .replace(/\([^)]*\)/g, "") // 괄호와 괄호 안 내용 제거
-            .replace(/\[[^\]]*\]/g, "") // 대괄호와 대괄호 안 내용 제거
-            .trim();
-        })
-        .filter((title) => title.length > 0);
-    } catch (error) {
-      console.error("영화 제목 파싱 중 오류:", error);
-      return [];
-    }
-  };
-
-  /**
    * 영화 제목들을 검색하여 포스터 정보를 가져옵니다 (팀원의 API 사용)
    */
   const handleMovieSearch = async (movieTitles: string[]) => {
@@ -553,7 +505,11 @@ const GeminiWeatherComponent = () => {
   };
 
   /**
-   * 3. Gemini 연동 (영화 추천) - 사용자 선택 정보 포함
+   * 3. Gemini 연동 (영화 추천) - 클린 아키텍처 준수
+   *
+   * 🏗️ 클린 아키텍처 원칙:
+   * - 프론트엔드: 단순히 데이터 전달만 담당
+   * - 비즈니스 로직(프롬프트 생성, 영화 제목 추출): UseCase에서 처리
    */
   const handleGeminiRecommendation = async () => {
     if (!state.weather || !state.userSelection) return;
@@ -561,81 +517,48 @@ const GeminiWeatherComponent = () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      // 사용자 선택 정보를 텍스트로 변환하여 API로 전송
-      const userPreferences = Object.entries(state.userSelection)
-        .map(([categoryId, value]) => {
-          const category = USER_PREFERENCE_CATEGORIES.find(
-            (cat) => cat.id === categoryId
-          );
-          const categoryName = category ? category.name : categoryId;
-          const optionText = getCategoryOptionText(categoryId, value);
-          return `${categoryName}: ${optionText}`;
-        })
-        .join(", ");
-
-      // 날씨 정보 포맷팅
-      const temp = state.weather.currentTemp
-        ? `${state.weather.currentTemp}°C`
-        : "정보 없음";
-      const humidity = state.weather.humidity
-        ? `${state.weather.humidity}%`
-        : "정보 없음";
-      const feelsLike = state.weather.feelsLikeTemp
-        ? `${state.weather.feelsLikeTemp}°C`
-        : "정보 없음";
-
-      // 향상된 프롬프트 생성
-      const prompt = `현재 날씨 정보: 온도 ${temp}, 습도 ${humidity}, 체감온도 ${feelsLike}
-사용자 선호 정보: ${userPreferences}
-
-위 정보를 바탕으로 최적의 영화 10개를 추천해주세요. 
-- 날씨와 사용자의 모든 선호 정보를 종합적으로 고려해주세요
-- 추천 이유는 2-3줄로 간단히 설명해주세요
-- 영화 제목은 다음 형식으로 응답해주세요:
-
-[영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
-
+      // 📤 올바른 클린 아키텍처: 기존 라우터를 통해 백엔드 UseCase 호출
       const response = await fetch("/api/gemini", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt,
+          type: "movie-recommendation", // 🔹 영화 추천 타입 지정
+          weather: state.weather, // 🔹 날씨 정보 원본
+          userSelection: state.userSelection, // 🔹 사용자 선택 정보 원본
           temperature: 0.7,
           max_tokens: 4096,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini 요청 실패: ${response.status}`);
+        throw new Error(`영화 추천 요청 실패: ${response.status}`);
       }
 
-      const data: GeminiClientApiResponse = await response.json();
+      const data = await response.json();
 
-      if (!data.success || !data.data?.text) {
-        throw new Error(data.error || "Gemini 응답을 받을 수 없습니다.");
+      if (!data.success || !data.data) {
+        throw new Error(data.error || "영화 추천을 받을 수 없습니다.");
       }
 
+      // 📥 백엔드 UseCase에서 처리된 결과를 그대로 사용
       setState((prev) => ({
         ...prev,
-        geminiResponse: data.data!.text,
+        geminiResponse: data.data.geminiResponse,
+        movieTitles: data.data.movieTitles,
         step: "result",
         loading: false,
       }));
 
-      // AI 응답에서 영화 제목 추출
-      const movieTitles = extractMovieTitles(data.data!.text);
-
-      if (movieTitles.length > 0) {
+      // 영화 정보 검색 시작 (영화 제목은 이미 백엔드 UseCase에서 추출됨)
+      if (data.data.movieTitles.length > 0) {
         setState((prev) => ({
           ...prev,
-          movieTitles,
           step: "movies",
         }));
 
-        // 영화 정보 검색 시작
-        await handleMovieSearch(movieTitles);
+        await handleMovieSearch(data.data.movieTitles);
       }
     } catch (error) {
       setState((prev) => ({
@@ -643,7 +566,7 @@ const GeminiWeatherComponent = () => {
         error:
           error instanceof Error
             ? error.message
-            : "Gemini 요청에 실패했습니다.",
+            : "영화 추천 요청에 실패했습니다.",
         loading: false,
       }));
     }

@@ -1,9 +1,9 @@
-import { WeatherRepository } from "../../../domain/repositories/recommender/weather";
+import { WeatherRepository } from "../../../domain/repositories/recommenders/weather";
 import {
   WeatherRequest,
   WeatherResponse,
   WeatherData,
-} from "../../../domain/entities/recommender/weather";
+} from "../../../domain/entities/recommenders/weather";
 
 // 기상청 API 리포지토리 구현체
 export class WeatherRepositoryImpl implements WeatherRepository {

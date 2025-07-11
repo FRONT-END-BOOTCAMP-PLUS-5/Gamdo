@@ -1,7 +1,7 @@
 import {
   GeminiRequest,
   GeminiResponse,
-} from "../../entities/recommender/gemini";
+} from "../../entities/recommenders/gemini";
 
 // Gemini 생성 서비스 리포지토리 인터페이스
 export interface GeminiRepository {

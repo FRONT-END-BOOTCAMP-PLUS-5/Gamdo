@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { WeatherService } from "../../../../backend/application/recommender/GetMovieWeatherUseCase";
-import { WeatherRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommender/weather";
+import { WeatherService } from "../../../../backend/application/recommenders/GetMovieWeatherUseCase";
+import { WeatherRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommenders/weather";
 
 // 의존성 주입을 위한 인스턴스 생성
 const weather_repository = new WeatherRepositoryImpl();

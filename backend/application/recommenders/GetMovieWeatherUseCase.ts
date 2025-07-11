@@ -1,4 +1,4 @@
-import { WeatherRepository } from "../../domain/repositories/recommender/weather";
+import { WeatherRepository } from "../../domain/repositories/recommenders/weather";
 import {
   WeatherRequest,
   WeatherResponse,
@@ -6,7 +6,7 @@ import {
   WeatherData,
   WeatherItem,
   ParsedWeatherInfo,
-} from "../../domain/entities/recommender/weather";
+} from "../../domain/entities/recommenders/weather";
 
 // 통합된 날씨 서비스 클래스 (비즈니스 로직 + 파싱)
 export class WeatherService {
