@@ -1,3 +1,11 @@
+// 위치 정보 타입
+export interface LocationInfo {
+  latitude: number;
+  longitude: number;
+  nx: number; // 기상청 격자 X 좌표
+  ny: number; // 기상청 격자 Y 좌표
+}
+
 // 날씨 데이터 도메인 엔티티 정의
 export interface WeatherData {
   response: {
@@ -45,8 +53,8 @@ export interface WeatherResponse {
 
 // ============== 파싱된 날씨 정보 ==============
 
-// 파싱된 날씨 정보 인터페이스
-export interface ParsedWeatherInfo {
+// 날씨 정보 타입 (API 응답 기반)
+export interface WeatherInfo {
   // 날씨 상태 정보
   skyCondition: string; // 하늘 상태 (맑음, 구름많음, 흐림)
   precipitationType: string; // 강수 형태 (없음, 비, 눈, 비/눈)
@@ -71,10 +79,22 @@ export interface ParsedWeatherInfo {
   };
 }
 
+// 파싱된 날씨 정보 인터페이스 (WeatherInfo의 별칭)
+export type ParsedWeatherInfo = WeatherInfo;
+
 // 파싱된 날씨 응답 인터페이스
 export interface ParsedWeatherResponse {
   success: boolean;
   data?: ParsedWeatherInfo;
   error?: string;
   timestamp: string;
+}
+
+// 날씨 API 응답 타입
+export interface WeatherApiResponse {
+  success: boolean;
+  weatherInfo?: WeatherInfo;
+  timestamp: string;
+  message?: string;
+  error?: string;
 }
