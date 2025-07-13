@@ -244,6 +244,12 @@ const validateUserSelection = (selection: UserSelectionInfo): boolean => {
 // 확장된 상태 타입
 interface ExtendedGeminiWeatherTestState extends GeminiWeatherTestState {
   userSelection: UserSelectionInfo | null;
+  addressInfo?: {
+    sido: string;
+    sigungu: string;
+    dong: string;
+    fullAddress: string;
+  } | null;
 }
 
 // UI 컴포넌트 (비즈니스 로직은 GetGeminiResponseUseCase에서 가져옴)
@@ -253,6 +259,7 @@ const GeminiWeatherComponent = () => {
     location: null,
     weather: null,
     userSelection: null,
+    addressInfo: null,
     geminiResponse: null,
     movieTitles: [],
     movieResults: [],
@@ -261,84 +268,159 @@ const GeminiWeatherComponent = () => {
   });
 
   /**
+   * 영화 제목을 파싱하여 한글과 영어 제목을 분리합니다
+   * @param movieTitle 전체 영화 제목 (예: "아바타(Avatar)")
+   * @returns 분리된 제목 객체
+   */
+  const parseMovieTitle = (
+    movieTitle: string
+  ): { korean: string; english: string | null } => {
+    const koreanEnglishPattern = /^(.+?)\s*\(([^)]+)\)\s*$/;
+    const match = movieTitle.match(koreanEnglishPattern);
+
+    if (match) {
+      const korean = match[1].trim();
+      const english = match[2].trim();
+
+      // 영어 제목이 숫자만 있는 경우 (연도)는 null 처리
+      if (/^\d{4}$/.test(english)) {
+        return { korean, english: null };
+      }
+
+      return { korean, english };
+    }
+
+    // 괄호가 없는 경우 한글 제목만 있는 것으로 간주
+    return { korean: movieTitle, english: null };
+  };
+
+  /**
+   * 단일 영화 제목으로 TMDB 검색 (한글 → 영어 순서)
+   * @param movieTitle 영화 제목
+   * @returns 검색 결과 영화 정보
+   */
+  const searchSingleMovie = async (
+    movieTitle: string
+  ): Promise<RecommendedMovie> => {
+    const { korean, english } = parseMovieTitle(movieTitle);
+
+    const recommendedMovie: RecommendedMovie = {
+      title: movieTitle,
+      searchStatus: "searching",
+    };
+
+    // 1단계: 한글 제목으로 검색
+    try {
+      const response = await fetch(
+        `/api/movie/search?query=${encodeURIComponent(korean)}&page=1`
+      );
+
+      if (!response.ok) {
+        throw new Error(`API 호출 실패: ${response.status}`);
+      }
+
+      const searchData = await response.json();
+
+      // 영화만 필터링 (TV 프로그램, 인물 제외)
+      const movieResults = searchData.results.filter(
+        (item: SearchResult) => item.media_type === "movie"
+      ) as MovieOrTvResult[];
+
+      if (movieResults.length > 0) {
+        const movie = movieResults[0];
+
+        return await processMovieResult(recommendedMovie, movie);
+      }
+    } catch (error) {
+      console.error("❌ 한글 제목 검색 오류:", error);
+    }
+
+    // 2단계: 영어 제목으로 검색 (영어 제목이 있는 경우에만)
+    if (english) {
+      try {
+        const response = await fetch(
+          `/api/movie/search?query=${encodeURIComponent(english)}&page=1`
+        );
+
+        if (!response.ok) {
+          throw new Error(`API 호출 실패: ${response.status}`);
+        }
+
+        const searchData = await response.json();
+
+        // 영화만 필터링 (TV 프로그램, 인물 제외)
+        const movieResults = searchData.results.filter(
+          (item: SearchResult) => item.media_type === "movie"
+        ) as MovieOrTvResult[];
+
+        if (movieResults.length > 0) {
+          const movie = movieResults[0];
+
+          return await processMovieResult(recommendedMovie, movie);
+        }
+      } catch (error) {
+        console.error("❌ 영어 제목 검색 오류:", error);
+      }
+    }
+
+    // 3단계: 모든 검색 실패
+
+    recommendedMovie.searchStatus = "not_found";
+    return recommendedMovie;
+  };
+
+  /**
+   * 영화 검색 결과를 처리하여 RecommendedMovie 객체를 생성합니다
+   * @param recommendedMovie 기본 추천 영화 객체
+   * @param movie TMDB 검색 결과
+   * @returns 처리된 추천 영화 객체
+   */
+  const processMovieResult = async (
+    recommendedMovie: RecommendedMovie,
+    movie: MovieOrTvResult
+  ): Promise<RecommendedMovie> => {
+    // 영화 정보 저장
+    recommendedMovie.movieInfo = {
+      id: movie.id,
+      title: movie.title || movie.name || "제목 없음",
+      originalTitle: movie.title || movie.name || "제목 없음",
+      overview: movie.overview || "",
+      releaseDate: movie.release_date || "",
+      posterPath: movie.poster_path || null,
+      backdropPath: movie.backdrop_path || null,
+      voteAverage: 0,
+      voteCount: 0,
+      popularity: 0,
+      adult: false,
+      genreIds: movie.genre_ids || [],
+      originalLanguage: "ko",
+    };
+
+    // 포스터 URL 생성
+    if (movie.poster_path) {
+      const baseUrl = "https://image.tmdb.org/t/p/";
+      const size = "w500";
+      recommendedMovie.posterUrl = `${baseUrl}${size}${movie.poster_path}`;
+    }
+
+    recommendedMovie.searchStatus = "found";
+    return recommendedMovie;
+  };
+
+  /**
    * 영화 제목들을 검색하여 포스터 정보를 가져옵니다 (팀원의 API 사용)
    */
   const handleMovieSearch = async (movieTitles: string[]) => {
     setState((prev) => ({ ...prev, loading: true }));
 
     try {
-      console.log("🎬 팀원 API 사용: 영화 검색 시작", movieTitles);
-
-      // 각 영화 제목에 대해 팀원의 API를 사용하여 검색
       const movieResults: RecommendedMovie[] = [];
 
+      // 각 영화 제목에 대해 한글 → 영어 순서로 검색
       for (const title of movieTitles) {
-        const recommendedMovie: RecommendedMovie = {
-          title,
-          searchStatus: "searching",
-        };
-
-        try {
-          // 팀원의 영화 검색 API 호출
-          const response = await fetch(
-            `/api/movie/search?query=${encodeURIComponent(title)}&page=1`
-          );
-
-          if (!response.ok) {
-            throw new Error(`API 호출 실패: ${response.status}`);
-          }
-
-          const searchData = await response.json();
-
-          // 영화만 필터링 (TV 프로그램, 인물 제외)
-          const movieResults = searchData.results.filter(
-            (item: SearchResult) => item.media_type === "movie"
-          ) as MovieOrTvResult[];
-
-          if (movieResults.length > 0) {
-            const movie = movieResults[0];
-
-            // 영화 정보 저장
-            recommendedMovie.movieInfo = {
-              id: movie.id,
-              title: movie.title || movie.name || "제목 없음",
-              originalTitle: movie.title || movie.name || "제목 없음",
-              overview: movie.overview || "",
-              releaseDate: movie.release_date || "",
-              posterPath: movie.poster_path || null,
-              backdropPath: movie.backdrop_path || null,
-              voteAverage: 0,
-              voteCount: 0,
-              popularity: 0,
-              adult: false,
-              genreIds: movie.genre_ids || [],
-              originalLanguage: "ko",
-            };
-
-            // 포스터 URL 생성
-            if (movie.poster_path) {
-              const baseUrl = "https://image.tmdb.org/t/p/";
-              const size = "w500";
-              recommendedMovie.posterUrl = `${baseUrl}${size}${movie.poster_path}`;
-            }
-
-            recommendedMovie.searchStatus = "found";
-          } else {
-            recommendedMovie.searchStatus = "not_found";
-          }
-        } catch (error) {
-          console.error(`영화 검색 오류 (${title}):`, error);
-          recommendedMovie.searchStatus = "error";
-          recommendedMovie.error =
-            error instanceof Error
-              ? error.message
-              : "영화 정보 검색 중 오류가 발생했습니다.";
-        }
-
-        movieResults.push(recommendedMovie);
+        const result = await searchSingleMovie(title);
+        movieResults.push(result);
       }
-
-      console.log("🎬 팀원 API: 영화 검색 완료", movieResults);
 
       setState((prev) => ({
         ...prev,
@@ -346,6 +428,7 @@ const GeminiWeatherComponent = () => {
         loading: false,
       }));
     } catch (error) {
+      console.error("❌ 전체 영화 검색 오류:", error);
       setState((prev) => ({
         ...prev,
         error:
@@ -358,6 +441,42 @@ const GeminiWeatherComponent = () => {
   };
 
   /**
+   * 좌표를 주소로 변환합니다 (역지오코딩) - 클린 아키텍처 적용
+   */
+  const getAddressFromCoordinates = async (
+    latitude: number,
+    longitude: number
+  ) => {
+    try {
+      // 🏗️ 백엔드 API 호출 (클린 아키텍처)
+      const response = await fetch(
+        `/api/geocoding?latitude=${latitude}&longitude=${longitude}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`역지오코딩 API 호출 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success || !data.data) {
+        throw new Error(data.error || "주소 정보를 가져올 수 없습니다");
+      }
+
+      return data.data; // AddressInfo 타입 반환
+    } catch (error) {
+      console.error("❌ 역지오코딩 오류:", error);
+      // 오류 발생 시 기본 주소 반환
+      return {
+        sido: "서울특별시",
+        sigungu: "중구",
+        dong: "명동",
+        fullAddress: "서울특별시 중구 명동",
+      };
+    }
+  };
+
+  /**
    * 1. 위치 정보 얻어오기 (GetUserLocationUseCase 사용)
    */
   const handleGetLocation = async () => {
@@ -366,9 +485,16 @@ const GeminiWeatherComponent = () => {
     const result = await getUserLocationService();
 
     if (result.success && result.data) {
+      // 역지오코딩으로 주소 정보 가져오기
+      const addressInfo = await getAddressFromCoordinates(
+        result.data.latitude,
+        result.data.longitude
+      );
+
       setState((prev) => ({
         ...prev,
         location: result.data!,
+        addressInfo,
         step: "weather",
         loading: false,
       }));
@@ -426,31 +552,12 @@ const GeminiWeatherComponent = () => {
       return;
     }
 
-    console.log("🌤️ 날씨 정보 조회 시작:", {
-      location: state.location,
-      timestamp: new Date().toISOString(),
-    });
-
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const apiUrl = `/api/weather?nx=${state.location.nx}&ny=${state.location.ny}`;
 
-      console.log("🌤️ 날씨 API 호출:", {
-        url: apiUrl,
-        nx: state.location.nx,
-        ny: state.location.ny,
-        timestamp: new Date().toISOString(),
-      });
-
       const response = await fetch(apiUrl);
-
-      console.log("🌤️ 날씨 API 응답 상태:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -464,14 +571,6 @@ const GeminiWeatherComponent = () => {
 
       const data: WeatherApiResponse = await response.json();
 
-      console.log("🌤️ 날씨 API 응답 데이터:", {
-        success: data.success,
-        hasWeatherInfo: !!data.weatherInfo,
-        error: data.error,
-        timestamp: data.timestamp,
-        weatherInfo: data.weatherInfo,
-      });
-
       if (!data.success || !data.weatherInfo) {
         const errorMessage = data.error || "날씨 정보를 가져올 수 없습니다.";
         console.error("❌ 날씨 데이터 검증 실패:", {
@@ -482,11 +581,6 @@ const GeminiWeatherComponent = () => {
         });
         throw new Error(errorMessage);
       }
-
-      console.log("✅ 날씨 정보 조회 성공:", {
-        weatherInfo: data.weatherInfo,
-        timestamp: new Date().toISOString(),
-      });
 
       setState((prev) => ({
         ...prev,
@@ -589,6 +683,7 @@ const GeminiWeatherComponent = () => {
       location: null,
       weather: null,
       userSelection: null,
+      addressInfo: null,
       geminiResponse: null,
       movieTitles: [],
       movieResults: [],
@@ -620,6 +715,17 @@ const GeminiWeatherComponent = () => {
                 <p>
                   격자 좌표: ({state.location.nx}, {state.location.ny})
                 </p>
+                {state.addressInfo && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                    <p className="font-medium text-blue-800">
+                      📍 {state.addressInfo.fullAddress}
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      {state.addressInfo.sido} • {state.addressInfo.sigungu} •{" "}
+                      {state.addressInfo.dong}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-gray-500">위치 정보를 가져와주세요</p>

@@ -153,9 +153,11 @@ export class GetGeminiMovieRecommendationUseCase {
     return `현재 날씨 정보: 온도 ${temp}, 습도 ${humidity}, 체감온도 ${feelsLike}
 사용자 선호 정보: ${userPreferences}
 
-위 정보를 바탕으로 최적의 영화 10개를 추천해주세요. 
-- 날씨와 사용자의 모든 선호 정보를 종합적으로 고려해주세요
-- 추천 이유나 기타 부연설명은 넣지말고 다음과 같은 형태로만 응답하세요.
+위 정보를 바탕으로 최적의 영화 10개를 추천.
+- 날씨와 사용자의 모든 선호 정보를 종합적으로 고려.
+- 해리포터 시리즈와 같이 영화 시리즈라고 추천하지말고 딱 하나의 영화만 추천.
+- 추천 이유나 기타 부연설명은 넣지말고 다음과 같은 형태로만 응답.
+- 영화 제목은 기본은 한글, 괄호로 영어 제목으로 ex) 슈퍼맨(Superman) 이런식으로 추천.
 
 [영화제목1, 영화제목2, 영화제목3, 영화제목4, 영화제목5, 영화제목6, 영화제목7, 영화제목8, 영화제목9, 영화제목10]`;
   }
@@ -198,12 +200,12 @@ export class GetGeminiMovieRecommendationUseCase {
   }
 
   /**
-   * 영화 제목을 정리합니다
+   * 영화 제목을 정리합니다 (한글(영어) 형태 지원)
    * @param movieTitles 원본 영화 제목 배열
    * @returns 정리된 영화 제목 배열
    */
   private cleanMovieTitles(movieTitles: string[]): string[] {
-    return movieTitles
+    const cleanedTitles = movieTitles
       .map((title) => {
         // 앞뒤 공백 제거
         let cleaned = title.trim();
@@ -211,15 +213,64 @@ export class GetGeminiMovieRecommendationUseCase {
         // 따옴표 제거
         cleaned = cleaned.replace(/^["']|["']$/g, "");
 
-        // 연도 정보 제거 (예: "영화제목 (2023)")
-        cleaned = cleaned.replace(/\s*\(\d{4}\)\s*$/, "");
+        // 연도 정보만 제거 (영어 제목은 보존)
+        // 예: "영화제목 (2023)" → "영화제목", "한글제목(English Title)" → "한글제목(English Title)"
+        cleaned = cleaned.replace(/\s*\(\d{4}\)\s*$/g, "");
 
-        // 기타 불필요한 문자 제거
-        cleaned = cleaned.replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-:]/g, "");
+        // 한글(영어) 형태 검증 및 정리
+        const koreanEnglishPattern = /^(.+?)\s*\(([^)]+)\)\s*$/;
+        const match = cleaned.match(koreanEnglishPattern);
 
-        return cleaned.trim();
+        if (match) {
+          const koreanTitle = match[1].trim();
+          const englishTitle = match[2].trim();
+
+          // 영어 제목이 숫자만 있는 경우 (연도)는 제거
+          if (/^\d{4}$/.test(englishTitle)) {
+            cleaned = koreanTitle;
+          } else {
+            cleaned = `${koreanTitle}(${englishTitle})`;
+          }
+        }
+
+        // 기타 불필요한 특수문자 제거 (괄호와 영어는 보존)
+        cleaned = cleaned.replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-:()]/g, "");
+
+        const result = cleaned.trim();
+
+        return result;
       })
       .filter((title) => title.length > 0) // 빈 문자열 제거
       .slice(0, 10); // 최대 10개
+
+    return cleanedTitles;
+  }
+
+  /**
+   * 영화 제목에서 한글 제목과 영어 제목을 분리합니다
+   * @param movieTitle 전체 영화 제목 (예: "아바타(Avatar)")
+   * @returns 분리된 제목 객체
+   */
+  private parseMovieTitle(movieTitle: string): {
+    korean: string;
+    english: string | null;
+  } {
+    const koreanEnglishPattern = /^(.+?)\s*\(([^)]+)\)\s*$/;
+    const match = movieTitle.match(koreanEnglishPattern);
+
+    if (match) {
+      const korean = match[1].trim();
+      const english = match[2].trim();
+
+      // 영어 제목이 숫자만 있는 경우 (연도)는 null 처리
+      if (/^\d{4}$/.test(english)) {
+        return { korean, english: null };
+      }
+
+      return { korean, english };
+    }
+
+    // 괄호가 없는 경우 한글 제목만 있는 것으로 간주
+    return { korean: movieTitle, english: null };
   }
 }
