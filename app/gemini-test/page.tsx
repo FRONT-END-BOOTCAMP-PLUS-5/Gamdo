@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { WeatherApiResponse } from "../../backend/domain/entities/recommenders/weather";
-import { GeminiWeatherTestState } from "../../backend/application/recommenders/GetGeminiResponseUseCase";
-import { getUserLocationService } from "../../backend/application/recommenders/GetUserLocationUseCase";
+import {
+  GeminiWeatherTestState,
+  UserSelectionInfo,
+} from "../../backend/application/recommenders/dtos/GeminiMovieRecommendationDto";
+import { getUserLocationService } from "../../backend/application/recommenders/usecases/GetUserLocationUseCase";
 import { RecommendedMovie } from "../../backend/domain/entities/recommenders/movie";
 import {
   SearchResult,
@@ -32,13 +35,6 @@ interface UserPreferenceCategory {
   options: SelectionOption[];
   defaultValue?: string;
 }
-
-/**
- * 사용자 선택 정보 타입 (동적으로 생성)
- */
-type UserSelectionInfo = {
-  [key: string]: string;
-};
 
 /**
  * 기분 선택 옵션
@@ -367,7 +363,7 @@ const GeminiWeatherComponent = () => {
   const handleGetLocation = async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    const result = await getUserLocationService.getCurrentLocation();
+    const result = await getUserLocationService();
 
     if (result.success && result.data) {
       setState((prev) => ({
@@ -425,24 +421,72 @@ const GeminiWeatherComponent = () => {
    * 2. 날씨 정보 연동
    */
   const handleGetWeather = async () => {
-    if (!state.location) return;
+    if (!state.location) {
+      console.error("❌ 위치 정보가 없습니다:", state.location);
+      return;
+    }
+
+    console.log("🌤️ 날씨 정보 조회 시작:", {
+      location: state.location,
+      timestamp: new Date().toISOString(),
+    });
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      const response = await fetch(
-        `/api/weather?nx=${state.location.nx}&ny=${state.location.ny}`
-      );
+      const apiUrl = `/api/weather?nx=${state.location.nx}&ny=${state.location.ny}`;
+
+      console.log("🌤️ 날씨 API 호출:", {
+        url: apiUrl,
+        nx: state.location.nx,
+        ny: state.location.ny,
+        timestamp: new Date().toISOString(),
+      });
+
+      const response = await fetch(apiUrl);
+
+      console.log("🌤️ 날씨 API 응답 상태:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ 날씨 API 응답 오류:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText,
+        });
         throw new Error(`날씨 정보 조회 실패: ${response.status}`);
       }
 
       const data: WeatherApiResponse = await response.json();
 
+      console.log("🌤️ 날씨 API 응답 데이터:", {
+        success: data.success,
+        hasWeatherInfo: !!data.weatherInfo,
+        error: data.error,
+        timestamp: data.timestamp,
+        weatherInfo: data.weatherInfo,
+      });
+
       if (!data.success || !data.weatherInfo) {
-        throw new Error(data.error || "날씨 정보를 가져올 수 없습니다.");
+        const errorMessage = data.error || "날씨 정보를 가져올 수 없습니다.";
+        console.error("❌ 날씨 데이터 검증 실패:", {
+          success: data.success,
+          hasWeatherInfo: !!data.weatherInfo,
+          error: data.error,
+          fullResponse: data,
+        });
+        throw new Error(errorMessage);
       }
+
+      console.log("✅ 날씨 정보 조회 성공:", {
+        weatherInfo: data.weatherInfo,
+        timestamp: new Date().toISOString(),
+      });
 
       setState((prev) => ({
         ...prev,
@@ -451,12 +495,21 @@ const GeminiWeatherComponent = () => {
         loading: false,
       }));
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "날씨 정보 조회에 실패했습니다.";
+
+      console.error("❌ 날씨 정보 조회 전역 오류:", {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        location: state.location,
+        timestamp: new Date().toISOString(),
+      });
+
       setState((prev) => ({
         ...prev,
-        error:
-          error instanceof Error
-            ? error.message
-            : "날씨 정보 조회에 실패했습니다.",
+        error: errorMessage,
         loading: false,
       }));
     }

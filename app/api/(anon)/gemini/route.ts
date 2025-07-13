@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GeminiService } from "../../../../backend/application/recommenders/GetGeminiResponseUseCase";
+import { GetGeminiMovieRecommendationUseCase } from "../../../../backend/application/recommenders/usecases/GetGeminiMovieRecommendationUseCase";
 import { GeminiRepositoryImpl } from "../../../../backend/infrastructure/repositories/recommenders/gemini";
 import { WeatherInfo } from "../../../../backend/domain/entities/recommenders/weather";
 
@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
 
     // 의존성 주입 (공통)
     const geminiRepository = new GeminiRepositoryImpl();
-    const geminiService = new GeminiService(geminiRepository);
+    const geminiUseCase = new GetGeminiMovieRecommendationUseCase(
+      geminiRepository
+    );
 
     // 🎬 영화 추천 요청 처리 (클린 아키텍처)
     if (body.type === "movie-recommendation") {
@@ -59,12 +61,12 @@ export async function POST(request: NextRequest) {
       }
 
       // 🏗️ 백엔드 UseCase 호출 (모든 비즈니스 로직은 UseCase에서 처리)
-      const result = await geminiService.generateMovieRecommendation(
-        body.weather,
-        body.userSelection,
-        body.temperature || 0.7,
-        body.max_tokens || 4096
-      );
+      const result = await geminiUseCase.execute({
+        weather: body.weather,
+        userSelection: body.userSelection,
+        temperature: body.temperature || 0.7,
+        max_tokens: body.max_tokens || 4096,
+      });
 
       const statusCode = result.success ? 200 : 500;
       return NextResponse.json(result, { status: statusCode });
@@ -83,11 +85,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Gemini 응답 생성 (기존 방식)
-    const result = await geminiService.generateResponse(
-      body.prompt,
-      body.temperature,
-      body.max_tokens
-    );
+    const result = await geminiUseCase.generateResponse({
+      prompt: body.prompt,
+      temperature: body.temperature,
+      max_tokens: body.max_tokens,
+    });
 
     const statusCode = result.success ? 200 : 500;
     return NextResponse.json(result, { status: statusCode });
@@ -116,14 +118,16 @@ export async function GET(request: NextRequest) {
 
     // 의존성 주입
     const geminiRepository = new GeminiRepositoryImpl();
-    const geminiService = new GeminiService(geminiRepository);
+    const geminiUseCase = new GetGeminiMovieRecommendationUseCase(
+      geminiRepository
+    );
 
     let prompt: string;
 
     // 타입에 따른 프롬프트 생성
     switch (type) {
       case "temperature":
-        prompt = geminiService.generateTemperatureQuestion();
+        prompt = "현재 온도에 대해 간단히 설명해주세요.";
         break;
       case "weather":
         prompt = "현재 날씨는 어떤가요? 온도와 날씨 상태를 알려주세요.";
@@ -140,7 +144,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Gemini 응답 생성
-    const result = await geminiService.generateResponse(prompt);
+    const result = await geminiUseCase.generateResponse({
+      prompt,
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
 
     // 성공 여부에 따른 응답 상태 코드 설정
     const statusCode = result.success ? 200 : 500;
