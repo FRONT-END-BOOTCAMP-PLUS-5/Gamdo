@@ -159,31 +159,6 @@ const GENRE_OPTIONS: SelectionOption[] = [
 ];
 
 /**
- * 함께 볼 사람 선택 옵션 (확장 예시)
- */
-const COMPANION_OPTIONS: SelectionOption[] = [
-  { value: "alone", label: "👤 혼자서", description: "혼자 조용히 감상" },
-  { value: "couple", label: "💑 연인과", description: "연인과 함께 감상" },
-  { value: "family", label: "👨‍👩‍👧‍👦 가족과", description: "가족과 함께 감상" },
-  { value: "friends", label: "👥 친구들과", description: "친구들과 함께 감상" },
-];
-
-/**
- * 연령대 선택 옵션 (확장 예시)
- */
-const AGE_GROUP_OPTIONS: SelectionOption[] = [
-  { value: "teenager", label: "👦 10대", description: "10대에 적합한 영화" },
-  { value: "twenties", label: "🧑 20대", description: "20대에 적합한 영화" },
-  { value: "thirties", label: "👨 30대", description: "30대에 적합한 영화" },
-  { value: "forties", label: "👨‍💼 40대", description: "40대에 적합한 영화" },
-  {
-    value: "fifties_plus",
-    label: "👨‍🦳 50대+",
-    description: "50대 이상에 적합한 영화",
-  },
-];
-
-/**
  * 🚀 사용자 선호도 카테고리 정의
  *
  * ✅ 새로운 카테고리 추가 방법:
@@ -213,23 +188,6 @@ const USER_PREFERENCE_CATEGORIES: UserPreferenceCategory[] = [
     description: "선호 장르를 선택해주세요",
     required: true,
     options: GENRE_OPTIONS,
-  },
-  // 🔵 선택 카테고리 (확장 가능)
-  {
-    id: "companion",
-    name: "함께 볼 사람",
-    description: "누구와 함께 볼 예정인가요?",
-    required: false,
-    options: COMPANION_OPTIONS,
-    defaultValue: "alone",
-  },
-  {
-    id: "age_group",
-    name: "연령대",
-    description: "연령대를 선택해주세요",
-    required: false,
-    options: AGE_GROUP_OPTIONS,
-    defaultValue: "twenties",
   },
 
   // 💡 새로운 카테고리 추가 예시:

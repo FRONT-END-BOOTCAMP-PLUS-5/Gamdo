@@ -152,9 +152,7 @@ export class GeminiService {
           mood: "현재 기분",
           time: "시청 시간대",
           genre: "선호 장르",
-          companion: "함께 볼 사람",
-          age_group: "연령대",
-          duration: "영화 길이",
+          duration: "영화 길이", // 확장성을 위한 예시
         };
 
         const categoryName = categoryNames[categoryId] || categoryId;
