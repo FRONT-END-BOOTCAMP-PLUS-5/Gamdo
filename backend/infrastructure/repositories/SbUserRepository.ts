@@ -32,7 +32,16 @@ export class SbUserRepository implements UserRepository {
   async createUser(user: User): Promise<User> {
     const { data, error } = await this.supabase
       .from("users")
-      .insert(user)
+      .insert([
+        {
+          name: user.name,
+          login_id: user.loginId,
+          password: user.password,
+          nickname: user.nickname,
+          profile_image: user.profileImage,
+          role: user.role,
+        },
+      ])
       .select()
       .single();
     if (error) throw new Error(error.message);
