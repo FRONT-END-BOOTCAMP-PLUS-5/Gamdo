@@ -8,7 +8,7 @@ const weather_usecase = new GetMovieWeatherUseCase(weather_repository);
 
 /**
  * 파싱된 날씨 정보 조회 API 엔드포인트
- * GET /api/weather?nx=60&ny=127
+ * GET /api/weathers?nx=60&ny=127
  * @param request 요청 객체 (쿼리 파라미터 포함)
  */
 export async function GET(request: Request) {

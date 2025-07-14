@@ -18,7 +18,7 @@ interface GeminiRequestBody {
 
 /**
  * Gemini 모델에 요청을 전송하고 응답을 받아옵니다
- * POST /api/gemini
+ * POST /api/geminis
  *
  * 🏗️ 클린 아키텍처 준수:
  * - 라우터: 요청 분기 및 백엔드 UseCase 호출
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * 현재 온도에 대한 간단한 질문을 Gemini에게 전송합니다
- * GET /api/gemini?type=temperature
+ * GET /api/geminis?type=temperature
  */
 export async function GET(request: NextRequest) {
   try {

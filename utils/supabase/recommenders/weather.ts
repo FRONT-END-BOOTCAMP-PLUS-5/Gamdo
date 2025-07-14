@@ -124,7 +124,7 @@ export async function fetchWeatherData(
   gridCoordinates: GridXY
 ): Promise<ParsedWeatherInfo> {
   const response = await fetch(
-    `/api/weather?nx=${gridCoordinates.nx}&ny=${gridCoordinates.ny}`
+    `/api/weathers?nx=${gridCoordinates.nx}&ny=${gridCoordinates.ny}`
   );
 
   if (!response.ok) {

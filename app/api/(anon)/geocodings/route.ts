@@ -8,7 +8,7 @@ const geocodeUseCase = new GetAddressFromCoordinatesUseCase(geocodeRepository);
 
 /**
  * 역지오코딩 API 엔드포인트
- * GET /api/geocoding?latitude=37.5665&longitude=126.9780
+ * GET /api/geocodings?latitude=37.5665&longitude=126.9780
  * @param request 요청 객체 (쿼리 파라미터 포함)
  */
 export async function GET(request: NextRequest) {

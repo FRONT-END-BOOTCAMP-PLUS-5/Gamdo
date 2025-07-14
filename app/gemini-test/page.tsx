@@ -450,7 +450,7 @@ const GeminiWeatherComponent = () => {
     try {
       // 🏗️ 백엔드 API 호출 (클린 아키텍처)
       const response = await fetch(
-        `/api/geocoding?latitude=${latitude}&longitude=${longitude}`
+        `/api/geocodings?latitude=${latitude}&longitude=${longitude}`
       );
 
       if (!response.ok) {
@@ -555,7 +555,7 @@ const GeminiWeatherComponent = () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      const apiUrl = `/api/weather?nx=${state.location.nx}&ny=${state.location.ny}`;
+      const apiUrl = `/api/weathers?nx=${state.location.nx}&ny=${state.location.ny}`;
 
       const response = await fetch(apiUrl);
 
@@ -623,7 +623,7 @@ const GeminiWeatherComponent = () => {
 
     try {
       // 📤 올바른 클린 아키텍처: 기존 라우터를 통해 백엔드 UseCase 호출
-      const response = await fetch("/api/gemini", {
+      const response = await fetch("/api/geminis", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
