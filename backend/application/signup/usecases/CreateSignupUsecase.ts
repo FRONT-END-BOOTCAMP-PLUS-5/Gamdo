@@ -6,8 +6,8 @@ import {
   validateEmail,
   validatePassword,
   validateNickname,
-} from "../../../../utils/validation";
-import bcrypt from "bcrypt";
+} from "@/utils/validation";
+import { hashPassword } from "@/utils/hash";
 
 export class CreateSignupUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -33,13 +33,12 @@ export class CreateSignupUseCase {
       );
     }
 
-    // 1. 이메일 중복 체크
+    // 1. 이메일, 닉네임 중복 체크
     const emailExists = await this.userRepository.isEmailExists(dto.loginId);
     if (emailExists) {
       throw new Error("이미 사용 중인 이메일입니다.");
     }
 
-    // 2. 닉네임 중복 체크
     const nicknameExists = await this.userRepository.isNicknameExists(
       dto.nickname
     );
@@ -47,7 +46,7 @@ export class CreateSignupUseCase {
       throw new Error("이미 사용 중인 닉네임입니다.");
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await hashPassword(dto.password);
 
     // 2. User 엔티티 생성
     const user = new User(
@@ -62,7 +61,6 @@ export class CreateSignupUseCase {
     // 3. DB에 저장
     const created = await this.userRepository.createUser(user);
 
-    // 4. 응답 DTO로 변환
     return {
       userId: created.userId!,
       name: created.name,

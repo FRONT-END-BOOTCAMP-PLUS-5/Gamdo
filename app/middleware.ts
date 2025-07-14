@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
+import { AUTH_REQUIRED_PATHS } from "@/utils/authPaths";
 
 export function middleware(req: NextRequest) {
   const authResult = verifyAuthTokens(req);
@@ -17,5 +18,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/(anon)/review"], // 인증이 필요한 경로만 적용
+  matcher: AUTH_REQUIRED_PATHS, // 인증이 필요한 경로만 적용
 };
