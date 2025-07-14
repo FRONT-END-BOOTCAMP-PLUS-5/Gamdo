@@ -1,7 +1,7 @@
 import {
   GeminiApiRequest,
   GeminiApiResponse,
-} from "../../../backend/domain/entities/recommender/gemini";
+} from "../../../backend/domain/entities/recommenders/gemini";
 
 // Gemini API 클라이언트 클래스
 export class GeminiApi {
