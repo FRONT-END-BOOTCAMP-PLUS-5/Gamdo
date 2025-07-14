@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { verifyAccessToken } from "./jwt";
+import jwt from "jsonwebtoken";
 
 type TokenStatusResult =
-  | { code: "ok"; status: number }
+  | { code: "ok"; status: number; userId: string }
   | { code: "no_token"; status: number }
   | { code: "invalid"; status: number };
 
@@ -14,8 +15,13 @@ export function verifyAuthTokens(req: NextRequest): TokenStatusResult {
   }
 
   try {
-    verifyAccessToken(reqAccessToken);
-    return { code: "ok", status: 200 };
+    const decoded = verifyAccessToken(reqAccessToken) as jwt.JwtPayload;
+
+    const userId = decoded.userId;
+
+    if (!userId) throw new Error("No userId in token");
+
+    return { code: "ok", status: 200, userId };
   } catch {
     return { code: "invalid", status: 401 };
   }
