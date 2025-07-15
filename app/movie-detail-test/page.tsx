@@ -20,15 +20,11 @@ export default function MovieDetailTestPage() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [apiResults, setApiResults] = useState<{
     login: unknown;
-    tokenInfo: unknown;
     userInfo: unknown;
-    movieInfo: unknown;
     saveResult: unknown;
   }>({
     login: null,
-    tokenInfo: null,
     userInfo: null,
-    movieInfo: null,
     saveResult: null,
   });
 
@@ -69,27 +65,7 @@ export default function MovieDetailTestPage() {
   };
 
   /**
-   * 2. JWT 토큰 정보 확인
-   */
-  const checkTokenInfo = async () => {
-    try {
-      const response = await fetch("/api/saves/user-auth");
-      const result = await response.json();
-
-      setApiResults((prev) => ({ ...prev, tokenInfo: result }));
-
-      if (result.success) {
-        alert(`✅ 토큰 정보 확인 성공!\n사용자 ID: ${result.data.userId}`);
-      } else {
-        alert(`❌ 토큰 확인 실패: ${result.error}`);
-      }
-    } catch (error) {
-      alert(`❌ 토큰 확인 중 오류: ${error}`);
-    }
-  };
-
-  /**
-   * 3. 사용자 ID 확인
+   * 2. 사용자 ID 확인
    */
   const checkUserId = async () => {
     try {
@@ -109,32 +85,7 @@ export default function MovieDetailTestPage() {
   };
 
   /**
-   * 4. 영화 정보 확인
-   */
-  const checkMovieInfo = async () => {
-    if (!movieId) {
-      alert("❌ 영화 ID가 필요합니다.");
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/saves/movie-info?movieId=${movieId}`);
-      const result = await response.json();
-
-      setApiResults((prev) => ({ ...prev, movieInfo: result }));
-
-      if (result.success) {
-        alert(`✅ 영화 정보 확인 성공!\n제목: ${result.data.title}`);
-      } else {
-        alert(`❌ 영화 정보 확인 실패: ${result.error}`);
-      }
-    } catch (error) {
-      alert(`❌ 영화 정보 확인 중 오류: ${error}`);
-    }
-  };
-
-  /**
-   * 5. 영화 저장
+   * 3. 영화 저장
    */
   const saveMovie = async () => {
     if (!movieId) {
@@ -281,25 +232,10 @@ export default function MovieDetailTestPage() {
         </button>
 
         <button
-          onClick={checkTokenInfo}
-          className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 text-lg font-semibold"
-        >
-          🔍 2. JWT 토큰 정보 확인
-        </button>
-
-        <button
           onClick={checkUserId}
           className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 text-lg font-semibold"
         >
-          👤 3. 사용자 ID 확인
-        </button>
-
-        <button
-          onClick={checkMovieInfo}
-          className="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 text-lg font-semibold"
-          disabled={!movieId}
-        >
-          🎬 4. 영화 정보 확인
+          👤 2. 사용자 ID 확인
         </button>
 
         {/* 캘린더 */}
@@ -308,7 +244,7 @@ export default function MovieDetailTestPage() {
             onClick={() => setShowCalendar(!showCalendar)}
             className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 text-lg font-semibold"
           >
-            📅 5. 날짜 선택
+            📅 3. 날짜 선택
           </button>
           {showCalendar && <SimpleCalendar />}
           {selectedDate && (
@@ -323,7 +259,7 @@ export default function MovieDetailTestPage() {
           className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 text-lg font-semibold"
           disabled={!movieId || !selectedDate}
         >
-          💾 6. 영화 저장하기
+          💾 4. 영화 저장하기
         </button>
       </div>
 
