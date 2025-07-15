@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.user) {
       return NextResponse.json(
-        { error: "로그인에 실패했습니다." },
+        { error: "아이디 또는 비밀번호가 일치하지 않습니다." },
         { status: 401 }
       );
     }
