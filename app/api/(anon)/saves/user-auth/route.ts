@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       userAuthRepository
     );
 
-    const result = getUserFromTokenUseCase.execute({ accessToken });
+    const result = await getUserFromTokenUseCase.execute({ accessToken });
 
     if (!result.success) {
       return NextResponse.json(

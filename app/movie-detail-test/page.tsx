@@ -11,26 +11,6 @@ const formatDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// UTF-8을 안전하게 Base64로 인코딩하는 함수
-const safeBase64Encode = (str: string): string => {
-  try {
-    return btoa(unescape(encodeURIComponent(str)));
-  } catch {
-    const safeStr = JSON.stringify(str).replace(/[^\x00-\x7F]/g, "");
-    return btoa(safeStr);
-  }
-};
-
-// 쿠키 설정하는 함수
-const setCookie = (name: string, value: string, days: number = 1): void => {
-  if (typeof document === "undefined") return;
-
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
-};
-
 export default function MovieDetailTestPage() {
   const searchParams = useSearchParams();
   const movieId = searchParams.get("movieId");
@@ -38,188 +18,130 @@ export default function MovieDetailTestPage() {
   // 상태 관리
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [showCalendar, setShowCalendar] = useState(false);
-  const [userInfo, setUserInfo] = useState<unknown>(null);
-  const [posterInfo, setPosterInfo] = useState<unknown>(null);
-  const [testResults, setTestResults] = useState<{
-    userId: string;
-    movieId: string;
-    selectedDate: string;
-    posterUrl: string;
+  const [apiResults, setApiResults] = useState<{
+    login: unknown;
+    tokenInfo: unknown;
+    userInfo: unknown;
+    movieInfo: unknown;
+    saveResult: unknown;
   }>({
-    userId: "",
-    movieId: "",
-    selectedDate: "",
-    posterUrl: "",
+    login: null,
+    tokenInfo: null,
+    userInfo: null,
+    movieInfo: null,
+    saveResult: null,
   });
 
-  // 컴포넌트 마운트 시 영화 ID 설정
+  // 컴포넌트 마운트 시 영화 ID 표시
   useEffect(() => {
     if (movieId) {
-      setTestResults((prev) => ({
-        ...prev,
-        movieId: movieId,
-      }));
+      console.log("영화 ID:", movieId);
     }
   }, [movieId]);
 
   /**
-   * 임시 로그인 쿠키 생성 (테스트용)
+   * 1. 테스트 로그인
    */
-  const createTestLoginCookie = () => {
+  const testLogin = async () => {
     try {
-      const testUser = {
-        userId: "test-user-123",
-        name: "Test User",
-        loginId: "test@example.com",
-        nickname: "Tester",
-        role: "user",
-        koreanName: "테스트 사용자",
-        koreanNickname: "테스터",
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 3600,
-      };
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          loginId: "test02@example.com",
+          password: "testpassword123!",
+        }),
+      });
 
-      const header = safeBase64Encode(
-        JSON.stringify({ alg: "HS256", typ: "JWT" })
-      );
-      const payload = safeBase64Encode(JSON.stringify(testUser));
-      const signature = "test-signature";
+      const result = await response.json();
+      setApiResults((prev) => ({ ...prev, login: result }));
 
-      const testToken = `${header}.${payload}.${signature}`;
-
-      setCookie("access_token", testToken, 1);
-
-      setUserInfo(testUser);
-      setTestResults((prev) => ({ ...prev, userId: testUser.userId }));
-
-      alert(`✅ 테스트 로그인 쿠키 생성 완료!\n사용자 ID: ${testUser.userId}`);
+      if (response.ok && result.result?.success) {
+        alert("✅ 로그인 성공!");
+      } else {
+        alert(`❌ 로그인 실패: ${result.error || result.result?.message}`);
+      }
     } catch (error) {
-      alert(`❌ 테스트 로그인 쿠키 생성에 실패했습니다.\n오류: ${error}`);
+      alert(`❌ 로그인 중 오류: ${error}`);
     }
   };
 
   /**
-   * 1. 백엔드 API를 통해 사용자 ID 확인
+   * 2. JWT 토큰 정보 확인
+   */
+  const checkTokenInfo = async () => {
+    try {
+      const response = await fetch("/api/saves/user-auth");
+      const result = await response.json();
+
+      setApiResults((prev) => ({ ...prev, tokenInfo: result }));
+
+      if (result.success) {
+        alert(`✅ 토큰 정보 확인 성공!\n사용자 ID: ${result.data.userId}`);
+      } else {
+        alert(`❌ 토큰 확인 실패: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`❌ 토큰 확인 중 오류: ${error}`);
+    }
+  };
+
+  /**
+   * 3. 사용자 ID 확인
    */
   const checkUserId = async () => {
     try {
       const response = await fetch("/api/saves/user-auth");
       const result = await response.json();
 
-      if (result.success) {
-        const { userId, loginId, name, nickname } = result.data;
-        setTestResults((prev) => ({ ...prev, userId }));
-        setUserInfo(result.data);
+      setApiResults((prev) => ({ ...prev, userInfo: result }));
 
-        alert(
-          `✅ 현재 로그인된 사용자 ID: ${userId}\n이름: ${name}\n닉네임: ${nickname}\n이메일: ${loginId}`
-        );
+      if (result.success) {
+        alert(`✅ 사용자 ID 확인 성공: ${result.data.userId}`);
       } else {
-        alert(`❌ 사용자 인증 실패: ${result.error}`);
-        setTestResults((prev) => ({ ...prev, userId: "인증 실패" }));
+        alert(`❌ 사용자 ID 확인 실패: ${result.error}`);
       }
     } catch (error) {
-      alert(`❌ 사용자 ID 확인 중 오류가 발생했습니다.\n오류: ${error}`);
-      setTestResults((prev) => ({ ...prev, userId: "오류 발생" }));
+      alert(`❌ 사용자 ID 확인 중 오류: ${error}`);
     }
   };
 
   /**
-   * 2. 영화 ID 확인
+   * 4. 영화 정보 확인
    */
-  const checkMovieId = () => {
-    if (movieId) {
-      alert(`✅ 쿼리스트링에서 추출된 영화 ID: ${movieId}`);
-      setTestResults((prev) => ({ ...prev, movieId }));
-    } else {
-      alert(
-        "❌ 쿼리스트링에 movieId가 없습니다.\n\nURL 예시: /movie-detail-test?movieId=550"
-      );
-    }
-  };
-
-  /**
-   * 3. 선택된 날짜 확인
-   */
-  const checkSelectedDate = () => {
-    if (selectedDate) {
-      alert(`✅ 선택된 날짜: ${selectedDate}`);
-      setTestResults((prev) => ({ ...prev, selectedDate }));
-    } else {
-      alert("❌ 날짜를 선택해주세요.");
-    }
-  };
-
-  /**
-   * 4. 백엔드 API를 통해 TMDB에서 포스터 이미지 URL 가져오기
-   */
-  const checkPosterUrl = async () => {
+  const checkMovieInfo = async () => {
     if (!movieId) {
-      alert("❌ 영화 ID가 필요합니다.\n쿼리스트링에 movieId를 추가하세요.");
+      alert("❌ 영화 ID가 필요합니다.");
       return;
     }
 
     try {
-      const response = await fetch(
-        `/api/saves/movie-poster?movieId=${movieId}`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `API 호출 실패: ${response.status} ${response.statusText}`
-        );
-      }
-
+      const response = await fetch(`/api/saves/movie-info?movieId=${movieId}`);
       const result = await response.json();
 
-      if (!result.success) {
-        throw new Error(result.error || "포스터 정보 조회 실패");
+      setApiResults((prev) => ({ ...prev, movieInfo: result }));
+
+      if (result.success) {
+        alert(`✅ 영화 정보 확인 성공!\n제목: ${result.data.title}`);
+      } else {
+        alert(`❌ 영화 정보 확인 실패: ${result.error}`);
       }
-
-      const data = result.data;
-      const posterUrl = data.posterUrl || "포스터 없음";
-
-      setPosterInfo(data);
-      setTestResults((prev) => ({ ...prev, posterUrl }));
-
-      alert(
-        `✅ 포스터 URL 조회 성공!\n\n영화 제목: ${data.title}\n포스터 URL: ${posterUrl}`
-      );
     } catch (error) {
-      alert(
-        `❌ 포스터 정보를 가져올 수 없습니다.\n\n오류: ${error}\n\n💡 .env 파일에 TMDB_API_KEY가 올바르게 설정되었는지 확인하세요.`
-      );
-      setTestResults((prev) => ({ ...prev, posterUrl: "조회 실패" }));
+      alert(`❌ 영화 정보 확인 중 오류: ${error}`);
     }
   };
 
   /**
-   * 캘린더에서 날짜 선택
-   */
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
-    setTestResults((prev) => ({ ...prev, selectedDate: date }));
-    alert(`📅 날짜 선택됨: ${date}`);
-  };
-
-  /**
-   * 영화 저장 실행
+   * 5. 영화 저장
    */
   const saveMovie = async () => {
-    if (
-      !testResults.userId ||
-      testResults.userId === "인증 실패" ||
-      testResults.userId === "오류 발생"
-    ) {
-      alert("❌ 사용자 ID가 필요합니다.");
+    if (!movieId) {
+      alert("❌ 영화 ID가 필요합니다.");
       return;
     }
-    if (!testResults.movieId) {
-      alert("❌ 영화 ID가 필요합니다.\n쿼리스트링에 movieId를 추가하세요.");
-      return;
-    }
-    if (!testResults.selectedDate) {
+    if (!selectedDate) {
       alert("❌ 날짜를 선택해주세요.");
       return;
     }
@@ -231,21 +153,30 @@ export default function MovieDetailTestPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          movieId: testResults.movieId,
-          selectedDate: testResults.selectedDate,
+          movieId,
+          selectedDate,
         }),
       });
 
       const result = await response.json();
+      setApiResults((prev) => ({ ...prev, saveResult: result }));
 
       if (result.success) {
-        alert(`🎉 영화 저장 성공!\n${result.message}`);
+        alert(`✅ 영화 저장 성공!`);
       } else {
-        alert(`❌ 영화 저장 실패:\n${result.message}`);
+        alert(`❌ 영화 저장 실패: ${result.message}`);
       }
-    } catch {
-      alert("❌ 영화 저장 중 오류가 발생했습니다.");
+    } catch (error) {
+      alert(`❌ 영화 저장 중 오류: ${error}`);
     }
+  };
+
+  /**
+   * 캘린더에서 날짜 선택
+   */
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+    setShowCalendar(false);
   };
 
   // 간단한 캘린더 컴포넌트
@@ -310,7 +241,7 @@ export default function MovieDetailTestPage() {
   return (
     <div className="container mx-auto p-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8 text-center">
-        🎬 영화 저장 시스템 테스트 (클린 아키텍처)
+        🎬 영화 저장 API 테스트
       </h1>
 
       {!movieId && (
@@ -329,112 +260,78 @@ export default function MovieDetailTestPage() {
       )}
 
       <div className="bg-gray-100 p-6 rounded-lg mb-8">
-        <h2 className="text-xl font-semibold mb-4">현재 상태</h2>
+        <h2 className="text-xl font-semibold mb-4">테스트 정보</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <strong>영화 ID:</strong>{" "}
-            {testResults.movieId || "쿼리스트링에서 추출 필요"}
+            <strong>영화 ID:</strong> {movieId || "없음"}
           </div>
           <div>
-            <strong>사용자 ID:</strong> {testResults.userId || "없음"}
-          </div>
-          <div>
-            <strong>선택된 날짜:</strong> {testResults.selectedDate || "없음"}
-          </div>
-          <div>
-            <strong>포스터 URL:</strong> {testResults.posterUrl || "없음"}
+            <strong>선택된 날짜:</strong> {selectedDate || "없음"}
           </div>
         </div>
       </div>
 
-      {/* 테스트 로그인 버튼 */}
-      <div className="mb-8 text-center">
+      {/* API 테스트 버튼들 */}
+      <div className="space-y-4 mb-8">
         <button
-          onClick={createTestLoginCookie}
-          className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 text-lg font-semibold"
+          onClick={testLogin}
+          className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 text-lg font-semibold"
         >
-          🍪 테스트 로그인 (쿠키 생성)
-        </button>
-        <p className="text-sm text-gray-600 mt-2">
-          ↑ 먼저 테스트 로그인을 클릭하여 쿠키를 생성하세요
-        </p>
-      </div>
-
-      {/* 캘린더 버튼 */}
-      <div className="mb-8 text-center relative">
-        <button
-          onClick={() => setShowCalendar(!showCalendar)}
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 text-lg"
-        >
-          📅 캘린더 열기
+          🔑 1. 테스트 로그인
         </button>
 
-        {showCalendar && <SimpleCalendar />}
+        <button
+          onClick={checkTokenInfo}
+          className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 text-lg font-semibold"
+        >
+          🔍 2. JWT 토큰 정보 확인
+        </button>
 
-        {selectedDate && (
-          <p className="mt-4 text-green-600 font-semibold">
-            선택된 날짜: {selectedDate}
-          </p>
-        )}
-      </div>
-
-      {/* 데이터 확인 버튼들 */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
         <button
           onClick={checkUserId}
-          className="bg-green-500 text-white p-4 rounded-lg hover:bg-green-600"
+          className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 text-lg font-semibold"
         >
-          🔑 사용자 ID 확인 (백엔드 API)
+          👤 3. 사용자 ID 확인
         </button>
 
         <button
-          onClick={checkMovieId}
-          className="bg-purple-500 text-white p-4 rounded-lg hover:bg-purple-600"
+          onClick={checkMovieInfo}
+          className="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 text-lg font-semibold"
+          disabled={!movieId}
         >
-          🎭 영화 ID 확인 (쿼리스트링)
+          🎬 4. 영화 정보 확인
         </button>
 
-        <button
-          onClick={checkSelectedDate}
-          className="bg-yellow-500 text-white p-4 rounded-lg hover:bg-yellow-600"
-        >
-          📅 선택된 날짜 확인
-        </button>
+        {/* 캘린더 */}
+        <div className="relative">
+          <button
+            onClick={() => setShowCalendar(!showCalendar)}
+            className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 text-lg font-semibold"
+          >
+            📅 5. 날짜 선택
+          </button>
+          {showCalendar && <SimpleCalendar />}
+          {selectedDate && (
+            <p className="mt-2 text-center text-green-600 font-semibold">
+              선택된 날짜: {selectedDate}
+            </p>
+          )}
+        </div>
 
-        <button
-          onClick={checkPosterUrl}
-          className="bg-red-500 text-white p-4 rounded-lg hover:bg-red-600"
-        >
-          🖼️ 포스터 URL 확인 (백엔드 API)
-        </button>
-      </div>
-
-      {/* 영화 저장 버튼 */}
-      <div className="text-center">
         <button
           onClick={saveMovie}
-          className="bg-indigo-600 text-white px-8 py-4 rounded-lg hover:bg-indigo-700 text-lg font-semibold"
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 text-lg font-semibold"
+          disabled={!movieId || !selectedDate}
         >
-          🎬 영화 저장하기
+          💾 6. 영화 저장하기
         </button>
       </div>
 
-      {/* 디버그 정보 */}
-      <div className="mt-8 bg-gray-50 p-4 rounded-lg">
-        <h3 className="font-semibold mb-2">디버그 정보:</h3>
-        <pre className="text-sm bg-white p-2 rounded overflow-auto">
-          {JSON.stringify(
-            {
-              movieId,
-              searchParamsString: searchParams.toString(),
-              selectedDate,
-              userInfo,
-              posterInfo,
-              testResults,
-            },
-            null,
-            2
-          )}
+      {/* API 응답 결과 */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold mb-2">API 응답 결과:</h3>
+        <pre className="text-sm bg-white p-2 rounded overflow-auto max-h-96">
+          {JSON.stringify(apiResults, null, 2)}
         </pre>
       </div>
     </div>

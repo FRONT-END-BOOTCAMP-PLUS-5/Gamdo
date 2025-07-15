@@ -1,21 +1,21 @@
 import axios from "axios";
-import { MoviePosterRepository } from "../../domain/repositories/saves/MoviePosterRepository";
+import { MovieInfoRepository } from "../../domain/repositories/saves/MovieInfoRepository";
 import {
-  MoviePoster,
-  MoviePosterResult,
-} from "../../domain/entities/saves/MoviePoster";
+  MovieInfo,
+  MovieInfoResult,
+} from "../../domain/entities/saves/MovieInfo";
 
 /**
- * 영화 포스터 리포지토리 구현체
+ * 영화 정보 리포지토리 구현체
  */
-export class MoviePosterRepositoryImpl implements MoviePosterRepository {
+export class MovieInfoRepositoryImpl implements MovieInfoRepository {
   private readonly TMDB_API_KEY = process.env.TMDB_API_KEY;
   private readonly TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
   /**
-   * 영화 ID로 TMDB API에서 포스터 정보 조회
+   * 영화 ID로 TMDB API에서 영화 정보 조회
    */
-  async getMoviePosterById(movieId: string): Promise<MoviePosterResult> {
+  async getMovieInfoById(movieId: string): Promise<MovieInfoResult> {
     try {
       if (!movieId) {
         return {
@@ -40,33 +40,19 @@ export class MoviePosterRepositoryImpl implements MoviePosterRepository {
         },
       });
 
-      const { id, title, poster_path, backdrop_path, overview, release_date } =
-        response.data;
+      const { id, title, overview, release_date } = response.data;
 
-      // 포스터 URL 생성
-      const posterUrl = poster_path
-        ? `https://image.tmdb.org/t/p/w500${poster_path}`
-        : null;
-
-      const backdropUrl = backdrop_path
-        ? `https://image.tmdb.org/t/p/w1280${backdrop_path}`
-        : null;
-
-      // 영화 포스터 엔티티 생성
-      const moviePoster: MoviePoster = {
+      // 영화 정보 엔티티 생성
+      const movieInfo: MovieInfo = {
         id,
         title,
-        posterPath: poster_path,
-        backdropPath: backdrop_path,
-        posterUrl,
-        backdropUrl,
         overview,
         releaseDate: release_date,
       };
 
       return {
         success: true,
-        moviePoster,
+        movieInfo,
       };
     } catch (error: unknown) {
       // TMDB API 오류 처리
@@ -98,7 +84,7 @@ export class MoviePosterRepositoryImpl implements MoviePosterRepository {
 
       return {
         success: false,
-        error: "영화 포스터 정보를 가져오는 중 오류가 발생했습니다.",
+        error: "영화 정보를 가져오는 중 오류가 발생했습니다.",
       };
     }
   }

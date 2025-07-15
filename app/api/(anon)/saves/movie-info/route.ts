@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetMoviePosterUseCase } from "../../../../../backend/application/saves/usecases/GetMoviePosterUseCase";
-import { MoviePosterRepositoryImpl } from "../../../../../backend/infrastructure/saves/MoviePosterRepositoryImpl";
+import { GetMovieInfoUseCase } from "../../../../../backend/application/saves/usecases/GetMovieInfoUseCase";
+import { MovieInfoRepositoryImpl } from "../../../../../backend/infrastructure/saves/MovieInfoRepositoryImpl";
 
 /**
- * 영화 포스터 정보 조회 API
- * GET /api/saves/movie-poster?movieId=123
+ * 영화 정보 조회 API
+ * GET /api/saves/movie-info?movieId=123
  */
 export async function GET(request: NextRequest) {
   try {
@@ -22,12 +22,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 의존성 주입 및 UseCase 실행
-    const moviePosterRepository = new MoviePosterRepositoryImpl();
-    const getMoviePosterUseCase = new GetMoviePosterUseCase(
-      moviePosterRepository
-    );
+    const movieInfoRepository = new MovieInfoRepositoryImpl();
+    const getMovieInfoUseCase = new GetMovieInfoUseCase(movieInfoRepository);
 
-    const result = await getMoviePosterUseCase.execute({ movieId });
+    const result = await getMovieInfoUseCase.execute({ movieId });
 
     if (!result.success) {
       return NextResponse.json(
@@ -47,7 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "영화 포스터 정보를 가져오는 중 오류가 발생했습니다.",
+        error: "영화 정보를 가져오는 중 오류가 발생했습니다.",
       },
       { status: 500 }
     );

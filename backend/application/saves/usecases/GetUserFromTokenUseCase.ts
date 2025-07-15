@@ -13,7 +13,9 @@ export class GetUserFromTokenUseCase {
   /**
    * 토큰에서 사용자 정보 추출 실행
    */
-  execute(request: GetUserFromTokenRequestDto): GetUserFromTokenResponseDto {
+  async execute(
+    request: GetUserFromTokenRequestDto
+  ): Promise<GetUserFromTokenResponseDto> {
     const { accessToken } = request;
 
     if (!accessToken) {
@@ -24,7 +26,9 @@ export class GetUserFromTokenUseCase {
     }
 
     // 리포지토리를 통해 토큰 검증
-    const result = this.userAuthRepository.verifyTokenFromCookie(accessToken);
+    const result = await this.userAuthRepository.verifyTokenFromCookie(
+      accessToken
+    );
 
     if (!result.success) {
       return {
