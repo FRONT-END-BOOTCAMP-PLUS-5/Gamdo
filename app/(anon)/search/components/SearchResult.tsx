@@ -1,8 +1,7 @@
 import React from "react";
 import MovieCardList from "./MovieCardList";
-// import { BsFillCloudRainFill } from "react-icons/bs";
-
 import { useSearchParams } from "next/navigation";
+// import { EmptyContents } from "@/app/components";
 
 interface SearchResultProps {
   type: string;
@@ -39,10 +38,7 @@ export default function SearchResult({
       </div>
       <MovieCardList />
       {/* 검색 결과가 없을 때 MovieCardList와 조건부 렌더링 추가 */}
-      {/* <div className="text-center text-xl text-gray-300 p-32 flex flex-col items-center justify-center">
-        <BsFillCloudRainFill className="text-6xl mb-4" />
-        <span>검색 결과가 없습니다 :(</span>
-      </div> */}
+      {/* <EmptyContents text="검색 결과가 없습니다 :(" /> */}
     </div>
   );
 }
