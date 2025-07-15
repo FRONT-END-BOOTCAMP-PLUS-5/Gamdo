@@ -1,34 +1,37 @@
 import { SavedMovie } from "../../domain/entities/saves/SavedMovie";
 import { SavedMovieRepository } from "../../domain/repositories/saves/SavedMovieRepository";
+import { supabase } from "../../../utils/supabase/client";
 
+/**
+ * 저장된 영화 정보 리포지토리 구현체 (Supabase)
+ */
 export class SavedMovieRepositoryImpl implements SavedMovieRepository {
-  // 테스트용 메모리 저장소 (나중에 Supabase로 대체)
-  private savedMovies: SavedMovie[] = [];
-  private idCounter = 1;
-
   /**
-   * 영화 저장 정보를 저장 (현재는 메모리에 저장, 나중에 Supabase 연동)
+   * 영화 저장 정보를 수파베이스 calendar 테이블에 저장
    * @param savedMovie 저장할 영화 정보
    * @returns 저장된 영화 정보
    */
   async save(savedMovie: SavedMovie): Promise<SavedMovie> {
-    // ID와 생성 시간 설정
-    savedMovie.savedMovieId = this.idCounter.toString();
-    savedMovie.createdAt = new Date().toISOString();
-    this.idCounter++;
+    try {
+      // 수파베이스 calendar 테이블에 저장
+      const { error } = await supabase.from("calendar").insert([
+        {
+          user_id: savedMovie.userId,
+          movie_id: savedMovie.movieId,
+          saved_at: savedMovie.savedAt,
+        },
+      ]);
 
-    // 메모리에 저장
-    this.savedMovies.push(savedMovie);
+      if (error) {
+        throw new Error(`수파베이스 저장 오류: ${error.message}`);
+      }
 
-    console.log("🎬 영화 저장 완료:", {
-      savedMovieId: savedMovie.savedMovieId,
-      userId: savedMovie.userId,
-      movieId: savedMovie.movieId,
-      selectedDate: savedMovie.selectedDate,
-      posterImageUrl: savedMovie.posterImageUrl,
-    });
-
-    return savedMovie;
+      return savedMovie;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+      throw new Error(`영화 저장 중 오류가 발생했습니다: ${errorMessage}`);
+    }
   }
 
   /**
@@ -37,34 +40,24 @@ export class SavedMovieRepositoryImpl implements SavedMovieRepository {
    * @returns 저장된 영화 목록
    */
   async findByUserId(userId: string): Promise<SavedMovie[]> {
-    return this.savedMovies.filter((movie) => movie.userId === userId);
-  }
+    try {
+      const { data, error } = await supabase
+        .from("calendar")
+        .select("*")
+        .eq("user_id", userId);
 
-  /**
-   * 특정 영화 저장 정보 조회
-   * @param savedMovieId 저장된 영화 ID
-   * @returns 저장된 영화 정보 또는 null
-   */
-  async findById(savedMovieId: string): Promise<SavedMovie | null> {
-    return (
-      this.savedMovies.find((movie) => movie.savedMovieId === savedMovieId) ||
-      null
-    );
-  }
+      if (error) {
+        throw new Error(`수파베이스 조회 오류: ${error.message}`);
+      }
 
-  /**
-   * 특정 영화 저장 정보 삭제
-   * @param savedMovieId 저장된 영화 ID
-   * @returns 삭제 성공 여부
-   */
-  async delete(savedMovieId: string): Promise<boolean> {
-    const index = this.savedMovies.findIndex(
-      (movie) => movie.savedMovieId === savedMovieId
-    );
-    if (index > -1) {
-      this.savedMovies.splice(index, 1);
-      return true;
+      // 수파베이스 데이터를 SavedMovie 엔티티로 변환
+      return data.map(
+        (item) => new SavedMovie(item.user_id, item.movie_id, item.saved_at)
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+      throw new Error(`영화 목록 조회 중 오류가 발생했습니다: ${errorMessage}`);
     }
-    return false;
   }
 }

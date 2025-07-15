@@ -9,18 +9,8 @@ export interface SaveMovieResponseDto {
   success: boolean;
   message: string;
   savedMovie?: {
-    savedMovieId: string;
     userId: string;
     movieId: string;
-    selectedDate: string;
-    posterImageUrl: string;
-    createdAt: string;
+    savedAt: string;
   };
-}
-
-// 영화 포스터 정보 DTO
-export interface MoviePosterDto {
-  movieId: string;
-  posterPath: string;
-  fullPosterUrl: string;
 }
