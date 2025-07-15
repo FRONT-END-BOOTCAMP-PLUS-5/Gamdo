@@ -1,8 +1,11 @@
 import { SavedMovie } from "../../entities/saves/SavedMovie";
 
+/**
+ * 저장된 영화 정보 리포지토리 인터페이스
+ */
 export interface SavedMovieRepository {
   /**
-   * 영화 저장 정보를 데이터베이스에 저장
+   * 영화 저장 정보를 수파베이스 calendar 테이블에 저장
    * @param savedMovie 저장할 영화 정보
    * @returns 저장된 영화 정보
    */
@@ -14,18 +17,4 @@ export interface SavedMovieRepository {
    * @returns 저장된 영화 목록
    */
   findByUserId(userId: string): Promise<SavedMovie[]>;
-
-  /**
-   * 특정 영화 저장 정보 조회
-   * @param savedMovieId 저장된 영화 ID
-   * @returns 저장된 영화 정보 또는 null
-   */
-  findById(savedMovieId: string): Promise<SavedMovie | null>;
-
-  /**
-   * 특정 영화 저장 정보 삭제
-   * @param savedMovieId 저장된 영화 ID
-   * @returns 삭제 성공 여부
-   */
-  delete(savedMovieId: string): Promise<boolean>;
 }
