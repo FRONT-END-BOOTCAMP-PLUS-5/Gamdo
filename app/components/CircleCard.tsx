@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 interface CircleCardProps {
   imageUrl: string;
@@ -14,13 +15,15 @@ interface CircleCardProps {
 export default function CircleCard({ imageUrl, name }: CircleCardProps) {
   return (
     <div className="relative overflow-hidden rounded-full transition-transform duration-300 group cursor-pointer hover:scale-110 aspect-[1/1]">
-      <Image
-        src={imageUrl}
-        alt={name}
-        fill
-        className="object-cover rounded-full"
-        sizes="(max-width: 768px) 100vw, 308px"
-      />
+      <Link href={`/search/artist?name=${name}`}>
+        <Image
+          src={imageUrl}
+          alt={name}
+          fill
+          className="object-cover rounded-full"
+          sizes="(max-width: 768px) 100vw, 308px"
+        />
+      </Link>
     </div>
   );
 }
