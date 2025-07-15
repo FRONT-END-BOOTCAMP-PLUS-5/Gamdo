@@ -4,27 +4,18 @@ import { SbUserRepository } from "@/backend/infrastructure/repositories/SbUserRe
 import { GetUserInfoUsecase } from "@/backend/application/user/usecase/GetUserInfoUsecase";
 import { UpdateUserInfoUsecase } from "@/backend/application/user/usecase/UpdateUserInfoUsecase";
 import { UserWithoutSensitive } from "@/backend/application/signin/dtos/SigninDto";
-import { verifyAccessToken } from "@/backend/common/auth/jwt";
+import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
 
 export async function GET(req: NextRequest) {
   try {
-    const accessToken = req.cookies.get("access_token")?.value;
-    if (!accessToken) {
+    const authResult = verifyAuthTokens(req);
+    if (authResult.code !== "ok") {
       return NextResponse.json(
-        { error: "Access token is required" },
-        { status: 401 }
+        { error: authResult.code },
+        { status: authResult.status }
       );
     }
-    let payload: { userId: string };
-    try {
-      payload = verifyAccessToken(accessToken) as { userId: string };
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid or expired access token" },
-        { status: 401 }
-      );
-    }
-    const userId = payload.userId;
+    const userId = authResult.userId;
     if (!userId) {
       return NextResponse.json(
         { error: "Invalid token payload: userId missing" },
@@ -52,10 +43,25 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { userId, nickname, password } = await req.json();
-    if (!userId || !nickname || !password) {
+    const authResult = verifyAuthTokens(req);
+    if (authResult.code !== "ok") {
       return NextResponse.json(
-        { error: "userId, nickname, password are required" },
+        { error: authResult.code },
+        { status: authResult.status }
+      );
+    }
+    const userId = authResult.userId;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Invalid token payload: userId missing" },
+        { status: 400 }
+      );
+    }
+
+    const { nickname, password } = await req.json();
+    if (!nickname || !password) {
+      return NextResponse.json(
+        { error: "nickname, password are required" },
         { status: 400 }
       );
     }

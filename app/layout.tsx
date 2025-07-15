@@ -10,7 +10,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Header />
-        <main className="h-[100vh] bg-[#1D1F28]">{children}</main>
+        <main className="bg-[#1D1F28] py-10 min-h-[calc(100vh-88px)] h-full">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
