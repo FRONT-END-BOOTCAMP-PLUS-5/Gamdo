@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetMovieDetailsUseCase } from "../../../../backend/application/movie/GetMovieDetailsUseCase";
+import { GetMovieDetailsUseCase } from "../../../../backend/application/movies/usecases/GetMovieDetailsUseCase";
 import { TmdbApi } from "../../../../utils/tmdb/TmdbApi";
 
 const getMovieDetailsUseCase = new GetMovieDetailsUseCase(TmdbApi);
