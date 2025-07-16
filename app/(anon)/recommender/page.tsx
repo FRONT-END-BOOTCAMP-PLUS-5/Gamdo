@@ -1,3 +1,5 @@
+"use client";
+
 import { SiCoffeescript } from "react-icons/si";
 
 const RecommenderPage = () => {
