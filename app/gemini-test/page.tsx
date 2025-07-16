@@ -11,7 +11,7 @@ import { RecommendedMovie } from "../../backend/domain/entities/recommenders/mov
 import {
   SearchResult,
   MovieOrTvResult,
-} from "../../backend/domain/entities/SearchResult";
+} from "../../backend/domain/entities/movies/SearchResult";
 
 // ==================== 확장 가능한 사용자 선호도 카테고리 설정 ====================
 
