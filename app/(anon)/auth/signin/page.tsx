@@ -3,8 +3,15 @@ import { useState } from "react";
 import axios from "@/utils/axios";
 import { isAxiosError } from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useUserStore } from "@/app/stores/userStore";
+import useLoading from "@/app/hooks/useLoading";
 
 export default function SigninPage() {
+  const router = useRouter();
+  const { login } = useUserStore();
+  const [loading, setIsLoading] = useLoading(false);
+
   const [form, setForm] = useState({
     loginId: "",
     password: "",
@@ -18,12 +25,23 @@ export default function SigninPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
+
     try {
-      await axios.post("/auth/signin", {
+      const response = await axios.post("/auth/signin", {
         loginId: form.loginId,
         password: form.password,
       });
+
+      // 로그인 성공 시 유저 정보를 전역상태에 저장
+      if (response.data.result?.user) {
+        console.log(response.data.result.user);
+        login(response.data.result.user);
+        // 메인 페이지로 리다이렉트
+        router.replace("/");
+      }
     } catch (err: unknown) {
+      setIsLoading(false);
       if (isAxiosError(err)) {
         setError(err.response?.data?.error || "로그인에 실패했습니다.");
       } else if (err instanceof Error) {
@@ -70,15 +88,17 @@ export default function SigninPage() {
           </div>
           <button
             type="submit"
+            disabled={loading}
             className="
     relative z-0 p-[2px] rounded-[24px] w-full
     before:content-[''] before:absolute before:inset-0 before:rounded-[24px]
     before:bg-[linear-gradient(-45deg,#000000_0%,#4BBEAB_100%)]
     before:z-[-1] overflow-hidden
+    disabled:opacity-50 disabled:cursor-not-allowed
   "
           >
             <span className="block bg-slate-950 rounded-[24px] px-4 py-2 text-[#56EBE1] text-center">
-              로그인
+              {loading ? "로그인 중..." : "로그인"}
             </span>
           </button>
         </form>

@@ -1,5 +1,10 @@
 import "./globals.css";
-import { Header, Footer } from "./components";
+import {
+  Header,
+  Footer,
+  ClientUserInitializer,
+  AuthPageGuard,
+} from "./components";
 
 export default function RootLayout({
   children,
@@ -11,7 +16,8 @@ export default function RootLayout({
       <body>
         <Header />
         <main className="bg-[#1D1F28] py-10 min-h-[calc(100vh-88px)] h-full">
-          {children}
+          <ClientUserInitializer />
+          <AuthPageGuard>{children}</AuthPageGuard>
         </main>
         <Footer />
       </body>
