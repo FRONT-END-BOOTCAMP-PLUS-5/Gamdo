@@ -2,7 +2,6 @@ import {
   MovieInfo,
   RecommendedMovie,
 } from "../../../domain/entities/recommenders/movie";
-import { SearchRepositoryImpl } from "../../../infrastructure/repositories/SearchRepositoryImpl";
 import { MovieOrTvResult } from "../../../domain/entities/movies/SearchResult";
 import {
   SearchMovieByTitleRequestDto,
@@ -13,46 +12,76 @@ import {
   GetSingleMovieInfoResponseDto,
   GetMoviePosterUrlRequestDto,
   GetMoviePosterUrlResponseDto,
+  MovieDto,
+  SearchMultiResponseDto,
+  SearchMultiResultDto,
 } from "../dtos/GetMovieInfoDto";
 
 /**
  * 영화 정보 UseCase
- * 팀원의 SearchRepositoryImpl을 사용하여 영화 정보를 검색하고 처리합니다
+ * TMDB API의 새로운 구조를 프론트엔드 기대 타입으로 변환
  */
 export class GetMovieInfoUseCase {
-  private searchRepository: SearchRepositoryImpl;
+  constructor() {}
 
-  constructor() {
-    // 팀원이 만든 SearchRepositoryImpl 사용
-    this.searchRepository = new SearchRepositoryImpl();
+  /**
+   * TMDB API의 새로운 DTO 구조를 프론트엔드가 기대하는 구조로 변환
+   */
+  private convertSearchResponse(searchData: SearchMultiResponseDto): {
+    results: MovieOrTvResult[];
+  } {
+    const convertedResults = searchData.results
+      .map((item: SearchMultiResultDto) => {
+        if (item.media_type === "movie" || item.media_type === "tv") {
+          const movieItem = item as MovieDto;
+          return {
+            id: movieItem.id,
+            media_type: movieItem.media_type,
+            title: movieItem.title ?? "",
+            name: movieItem.title ?? "",
+            overview: movieItem.overview ?? "",
+            poster_path: movieItem.poster_path ?? null,
+            backdrop_path: movieItem.backdrop_path ?? null,
+            release_date: movieItem.release_date ?? "",
+            genre_ids: movieItem.genre_ids ?? [],
+          };
+        }
+        return null;
+      })
+      .filter((item) => item !== null) as MovieOrTvResult[];
+    return { results: convertedResults };
+  }
+
+  /**
+   * TMDB API 검색을 수행하고 프론트엔드 호환 형식으로 반환
+   */
+  public async searchMovies(
+    query: string,
+    page: number = 1
+  ): Promise<{ results: MovieOrTvResult[] }> {
+    const response = await fetch(
+      `/api/movies/search?query=${encodeURIComponent(query)}&page=${page}`
+    );
+    if (!response.ok) {
+      throw new Error(`TMDB API 호출 실패: ${response.status}`);
+    }
+    const searchData: SearchMultiResponseDto = await response.json();
+    return this.convertSearchResponse(searchData);
   }
 
   /**
    * 영화 제목으로 검색하여 첫 번째 결과를 반환 (메인 메서드)
-   * @param request 영화 제목 검색 요청 DTO
-   * @returns 영화 정보 응답 DTO
    */
   async searchMovieByTitle(
     request: SearchMovieByTitleRequestDto
   ): Promise<SearchMovieByTitleResponseDto> {
     try {
-      console.log("🎬 팀원 TMDB API: 영화 검색 요청:", request.title);
-
-      // 팀원의 SearchRepositoryImpl 사용
-      const response = await this.searchRepository.searchMulti(
-        request.title,
-        1
-      );
-
-      // 영화만 필터링 (TV 프로그램, 인물 제외)
-      const movieResults = response.results.filter(
+      const { results } = await this.searchMovies(request.title, 1);
+      const movieResults = results.filter(
         (item) => item.media_type === "movie"
-      ) as MovieOrTvResult[];
-
+      );
       if (movieResults.length > 0) {
         const movie = movieResults[0];
-
-        // SearchResult를 MovieInfo로 변환
         const movieInfo: MovieInfo = {
           id: movie.id,
           title: movie.title || movie.name || "제목 없음",
@@ -61,31 +90,25 @@ export class GetMovieInfoUseCase {
           releaseDate: movie.release_date || "",
           posterPath: movie.poster_path || null,
           backdropPath: movie.backdrop_path || null,
-          voteAverage: 0, // SearchResult에는 없는 정보
-          voteCount: 0, // SearchResult에는 없는 정보
-          popularity: 0, // SearchResult에는 없는 정보
-          adult: false, // SearchResult에는 없는 정보
+          voteAverage: 0,
+          voteCount: 0,
+          popularity: 0,
+          adult: false,
           genreIds: movie.genre_ids || [],
-          originalLanguage: "ko", // SearchResult에는 없는 정보
+          originalLanguage: "ko",
         };
-
         return {
           success: true,
           data: movieInfo,
           timestamp: new Date().toISOString(),
         };
       }
-
       return {
         success: false,
         error: "검색 결과가 없습니다.",
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error(
-        `팀원 TMDB API 영화 검색 중 오류 (${request.title}):`,
-        error
-      );
       return {
         success: false,
         error:
