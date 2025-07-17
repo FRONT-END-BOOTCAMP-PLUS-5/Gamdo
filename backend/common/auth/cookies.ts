@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+const ACCESS_TOKEN_MAX_AGE = 60 * 60; // 1시간
+const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7일
+
 export function setAuthCookies(
   response: NextResponse,
   accessToken: string,
@@ -10,14 +13,14 @@ export function setAuthCookies(
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60, // 1시간
+    maxAge: ACCESS_TOKEN_MAX_AGE,
   });
   response.cookies.set("refresh_token", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7일
+    maxAge: REFRESH_TOKEN_MAX_AGE,
   });
 }
 
