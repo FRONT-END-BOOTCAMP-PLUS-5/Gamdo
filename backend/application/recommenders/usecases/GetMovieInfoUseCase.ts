@@ -3,7 +3,7 @@ import {
   RecommendedMovie,
 } from "../../../domain/entities/recommenders/movie";
 import { SearchRepositoryImpl } from "../../../infrastructure/repositories/SearchRepositoryImpl";
-import { MovieOrTvResult } from "../../../domain/entities/SearchResult";
+import { MovieOrTvResult } from "../../../domain/entities/movies/SearchResult";
 import {
   SearchMovieByTitleRequestDto,
   SearchMovieByTitleResponseDto,

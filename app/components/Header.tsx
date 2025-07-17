@@ -48,9 +48,9 @@ export default function Header() {
             <a href="#" className="hover:text-white">
               추천
             </a>
-            <a href="#" className="hover:text-white">
+            <Link href="/search" className="hover:text-white">
               검색
-            </a>
+            </Link>
           </nav>
         </div>
         {user && (

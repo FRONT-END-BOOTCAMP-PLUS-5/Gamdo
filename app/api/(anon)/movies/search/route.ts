@@ -1,6 +1,8 @@
+// 영화 검색 라우트
+
 import { NextRequest, NextResponse } from "next/server";
-import { SearchRepositoryImpl } from "@/backend/infrastructure/repositories/SearchRepositoryImpl";
-import { SearchMultiUseCase } from "@/backend/application/search/SearchMultiUseCase";
+import { SearchRepositoryImpl } from "@/backend/infrastructure/repositories/movies/SearchRepositoryImpl";
+import { SearchMultiUseCase } from "@/backend/application/search/usecases/SearchMultiUseCase";
 
 const searchRepository = new SearchRepositoryImpl();
 const searchMultiUseCase = new SearchMultiUseCase(searchRepository);
