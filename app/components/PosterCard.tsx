@@ -3,6 +3,7 @@ import Image from "next/image";
 interface PosterCardProps {
   imageUrl: string;
   name: string;
+  className?: string;
 }
 
 /**
@@ -12,9 +13,17 @@ interface PosterCardProps {
  * MovieCardList컴포넌트를 보면 어떻게 사용하는지 확인할 수 있습니다.
  */
 
-export default function PosterCard({ imageUrl, name }: PosterCardProps) {
+export default function PosterCard({
+  imageUrl,
+  name,
+  className,
+}: PosterCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-[20px] transition-transform duration-300 group cursor-pointer hover:scale-110 aspect-[308/457]">
+    <div
+      className={`relative overflow-hidden rounded-[20px] transition-transform duration-300 group cursor-pointer hover:scale-110 aspect-[308/457] ${
+        className || ""
+      }`}
+    >
       <Image
         src={imageUrl}
         alt={name}
