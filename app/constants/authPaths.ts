@@ -6,7 +6,7 @@
  */
 
 // 인증이 필요한 백엔드 API 경로 (미들웨어, axios 인터셉터에서 사용)
-export const AUTH_REQUIRED_API_PATHS = ["/api/review"];
+export const AUTH_REQUIRED_API_PATHS = ["/api/review", "/api/user", "/user"];
 
 // 인증이 필요한 프론트 페이지 경로 (pageGuard에서 사용)
 export const AUTH_REQUIRED_PAGES_PATHS = ["/mypage"];

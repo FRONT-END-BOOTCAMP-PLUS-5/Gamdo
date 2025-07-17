@@ -1,4 +1,3 @@
 export { default as Header } from "./Header";
 export { default as Footer } from "./Footer";
 export { default as AuthPageGuard } from "./AuthPageGuard";
-export { default as ClientUserInitializer } from "./ClientUserInitializer";
