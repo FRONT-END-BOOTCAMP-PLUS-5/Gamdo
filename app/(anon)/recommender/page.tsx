@@ -9,7 +9,9 @@ const RecommenderPage = () => {
       {/* 상단텍스트 + 사용자 정보 카테고리 감싸는 div */}
       <div className="flex flex-col w-4/5 h-screen mx-auto border-2 border-blue-500">
         {/* 취향에 딱 맞춘 영화 */}
-        <div className="flex my-15 justify-center text-white text-5xl">취향에 딱 맞춘 영화를 추천해드릴게요</div>
+        <div className="flex my-15 justify-center text-white text-5xl">
+          취향에 딱 맞춘 영화를 추천해드릴게요
+        </div>
         {/* 날씨 + 사용자 정보 감싸는 섹션 */}
         <div className="flex-1 flex-col border-2 border-red-500">
           {/* 날씨 */}
@@ -19,7 +21,9 @@ const RecommenderPage = () => {
               {/* 날씨 기본 정보 섹션 */}
               <div className="flex-1 mb-5 pt-10">
                 <span className="flex justify-center text-5xl">25°</span>
-                <span className="flex justify-center text-1xl mt-2">서울특별시 구로구</span>
+                <span className="flex justify-center text-1xl mt-2">
+                  서울특별시 구로구
+                </span>
               </div>
               {/* 날씨 각종 정보 섹션 */}
               <div className="flex ">
@@ -44,12 +48,24 @@ const RecommenderPage = () => {
               </div>
               {/* 날씨 버튼 컴포넌트 */}
               <div className="flex h-1/2 justify-center border-2 border-yellow-500 items-center px-5 gap-2">
-                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">맑음</button>
-                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">흐림</button>
-                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">비</button>
-                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">눈</button>
-                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">우박</button>
-                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">안개</button>
+                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                  맑음
+                </button>
+                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                  흐림
+                </button>
+                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                  비
+                </button>
+                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                  눈
+                </button>
+                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                  우박
+                </button>
+                <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                  안개
+                </button>
               </div>
             </div>
           </div>
@@ -63,10 +79,16 @@ const RecommenderPage = () => {
               </div>
               <div className="mt-5 pl-1 pb-4 border-b-2 border-white">감정</div>
               {/* 7.17여기부터 */}
-              <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">안개</button>
+              <button className="border-2 border-white rounded-lg px-4 py-2 hover:cursor-pointer">
+                안개
+              </button>
             </div>
-            <div className="flex-1 flex-col m-5 p-5 border-2 border-red-500">장르</div>
-            <div className="flex-1 flex-col m-5 p-5 border-2 border-red-500">시간</div>
+            <div className="flex-1 flex-col m-5 p-5 border-2 border-red-500">
+              장르
+            </div>
+            <div className="flex-1 flex-col m-5 p-5 border-2 border-red-500">
+              시간
+            </div>
           </div>
         </div>
       </div>
