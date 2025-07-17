@@ -11,7 +11,7 @@ import { RecommendedMovie } from "../../backend/domain/entities/recommenders/mov
 import {
   SearchResult,
   MovieOrTvResult,
-} from "../../backend/domain/entities/SearchResult";
+} from "../../backend/domain/entities/movies/SearchResult";
 
 // ==================== 확장 가능한 사용자 선호도 카테고리 설정 ====================
 
@@ -312,7 +312,7 @@ const GeminiWeatherComponent = () => {
     // 1단계: 한글 제목으로 검색
     try {
       const response = await fetch(
-        `/api/movie/search?query=${encodeURIComponent(korean)}&page=1`
+        `/api/movies/search?query=${encodeURIComponent(korean)}&page=1`
       );
 
       if (!response.ok) {
@@ -339,7 +339,7 @@ const GeminiWeatherComponent = () => {
     if (english) {
       try {
         const response = await fetch(
-          `/api/movie/search?query=${encodeURIComponent(english)}&page=1`
+          `/api/movies/search?query=${encodeURIComponent(english)}&page=1`
         );
 
         if (!response.ok) {
