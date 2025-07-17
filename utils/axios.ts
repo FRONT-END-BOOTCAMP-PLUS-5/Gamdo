@@ -32,8 +32,6 @@ async function handleAuthFailure() {
     } catch (error) {
       console.warn("Zustand 상태 초기화 실패:", error);
     }
-
-    // window.location.href = "/auth/signin";
   }
 }
 

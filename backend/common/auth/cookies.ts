@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-const ACCESS_TOKEN_MAX_AGE = 30; // 30초
-const REFRESH_TOKEN_MAX_AGE = 60 * 2; // 2분
+const ACCESS_TOKEN_MAX_AGE = 60 * 60; // 1시간
+const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24; // 24시간
 
 export function setAuthCookies(
   response: NextResponse,

@@ -8,7 +8,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { isAuthRequiredPage } from "@/utils/authUtils";
 
 export default function Header() {
-  const { user, logout, isAuthenticated } = useUserStore();
+  const { logout, isAuthenticated } = useUserStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -53,15 +53,6 @@ export default function Header() {
             </Link>
           </nav>
         </div>
-        {user && (
-          <div className="px-4 text-white">
-            <span>{user.loginId}, </span>
-            <span>{user.name}, </span>
-            <span>{user.nickname}, </span>
-            <span>{user.role}, </span>
-            <span>{user.userId}</span>
-          </div>
-        )}
         {isAuthenticated ? (
           <>
             <div className="text-white">
