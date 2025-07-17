@@ -33,7 +33,7 @@ async function handleAuthFailure() {
       console.warn("Zustand 상태 초기화 실패:", error);
     }
 
-    window.location.href = "/auth/signin";
+    // window.location.href = "/auth/signin";
   }
 }
 
@@ -51,13 +51,27 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
       try {
         await instance.post("/auth/refresh-token");
+
         return instance(originalRequest);
       } catch (refreshError) {
-        console.log("리프레시 토큰 만료 - 완전한 로그아웃 처리");
+        console.log("❌ 리프레시 토큰 실패:", refreshError);
+
         await handleAuthFailure();
         return Promise.reject(refreshError);
       }
     }
+    //TODO: 401, 403 에러 처리 로직 개선 필요
+    // 403 에러 (토큰 갱신 불가능) 또는 기타 인증 관련 에러 처리
+    if (
+      error.response &&
+      error.response.status === 403 &&
+      isAuthRequired(originalRequest.url)
+    ) {
+      console.log("🚫 토큰 갱신 불가능 - 바로 로그아웃 처리");
+      await handleAuthFailure();
+    }
+
+    console.log("⚠️ 인터셉터 조건 불만족 - 에러 그대로 반환");
     return Promise.reject(error);
   }
 );
