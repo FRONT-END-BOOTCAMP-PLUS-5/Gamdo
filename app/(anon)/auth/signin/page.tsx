@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/app/stores/userStore";
 import useLoading from "@/app/hooks/useLoading";
+import { SubmitButton } from "@/app/components";
 
 export default function SigninPage() {
   const router = useRouter();
@@ -86,21 +87,12 @@ export default function SigninPage() {
               required
             />
           </div>
-          <button
+          <SubmitButton
+            loading={loading}
+            text="로그인"
+            loadingText="로그인 중..."
             type="submit"
-            disabled={loading}
-            className="
-    relative z-0 p-[2px] rounded-[24px] w-full
-    before:content-[''] before:absolute before:inset-0 before:rounded-[24px]
-    before:bg-[linear-gradient(-45deg,#000000_0%,#4BBEAB_100%)]
-    before:z-[-1] overflow-hidden
-    disabled:opacity-50 disabled:cursor-not-allowed
-  "
-          >
-            <span className="block bg-slate-950 rounded-[24px] px-4 py-2 text-[#56EBE1] text-center">
-              {loading ? "로그인 중..." : "로그인"}
-            </span>
-          </button>
+          />
         </form>
         <div className="w-full h-4">
           {error && <div className="text-red-400 text-center">{error}</div>}

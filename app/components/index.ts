@@ -5,3 +5,4 @@ export { default as CircleCard } from "./CircleCard";
 export { default as EmptyContents } from "./EmptyContents";
 export { PosterCardSkeleton } from "./SkeletonUI";
 export { default as AuthPageGuard } from "./AuthPageGuard";
+export { default as SubmitButton } from "./SubmitButton";
