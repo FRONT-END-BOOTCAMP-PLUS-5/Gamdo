@@ -6,10 +6,19 @@
  */
 
 // 인증이 필요한 백엔드 API 경로 (미들웨어, axios 인터셉터에서 사용)
-export const AUTH_REQUIRED_API_PATHS = ["/api/review", "/api/user", "/user"];
+// 하나의 배열에서 관리 (미들웨어용: /api 접두사 포함)
+// @@@@@@페이지 경로가 아니라 api 주소입니다.@@@@@@
+export const AUTH_REQUIRED_API_PATHS = ["/api/review", "/api/user"];
+
+// axios용: /api 접두사 제거된 경로
+export const AUTH_REQUIRED_API_PATHS_FOR_AXIOS = AUTH_REQUIRED_API_PATHS.map(
+  (path) => (path.startsWith("/api") ? path.replace("/api", "") : path)
+);
 
 // 인증이 필요한 프론트 페이지 경로 (pageGuard에서 사용)
+// @@@@@@페이지 url입니다@@@@@@
 export const AUTH_REQUIRED_PAGES_PATHS = ["/mypage"];
 
 // 로그인한 사용자가 접근하면 안 되는 페이지
+// @@@@@@페이지 url입니다@@@@@@
 export const AUTH_FORBIDDEN_PAGES_PATHS = ["/auth/signin", "/auth/signup"];
