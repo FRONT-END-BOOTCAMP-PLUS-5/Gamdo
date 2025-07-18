@@ -1,67 +1,123 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { SbSavedWatchRepository } from '@/backend/infrastructure/repositories/SbSavedWatchRepository';
-import { supabase } from '../../../../utils/supabase/client';
+import { CreateSavedWatchDto } from "@/backend/application/saved-watch/dtos/CreateSavedWatchDto";
+import { CreateSavedWatchUsecase } from "@/backend/application/saved-watch/usecases/CreateSavedWatchUsecase";
+import { DeleteSavedWatchUsecase } from "@/backend/application/saved-watch/usecases/DeleteSavedWatchUsecase";
+import { GetSavedWatchUsecase } from "@/backend/application/saved-watch/usecases/GetSavedWatchUsecase";
+import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
+import { SbSavedWatchRepository } from "@/backend/infrastructure/repositories/SbSavedWatchRepository";
+import { supabase } from "@/utils/supabase/client";
+import { NextRequest, NextResponse } from "next/server";
 
-const repo = new SbSavedWatchRepository();
+export async function GET(req: NextRequest) {
+  try {
+    const authResult = verifyAuthTokens(req);
+    if (authResult.code !== "ok") {
+      return NextResponse.json(
+        { error: authResult.code },
+        { status: authResult.status }
+      );
+    }
+    const userId = authResult.userId;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Invalid token payload: userId missing" },
+        { status: 400 }
+      );
+    }
 
-// POST 예시: is_recommended true/false 모두 저장 가능
-// {
-//   "user_id": "b3e1c2d4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
-//   "movie_id": "155",
-//   "is_recommended": false
-// }
+    const savedWatchRepository = new SbSavedWatchRepository(supabase);
+    const getSavedWatchUsecase = new GetSavedWatchUsecase(savedWatchRepository);
 
-export async function GET(req: Request) {
-  // 임시로 인증 체크 비활성화 (테스트용)
-  // const authHeader = req.headers.get('Authorization');
-  // if (!authHeader) return NextResponse.json({ error: 'No auth header' }, { status: 401 });
-
-  // const token = authHeader.replace('Bearer ', '');
-  // const { data: { user }, error } = await supabase.auth.getUser(token);
-  // if (error || !user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-
-  // const userId = user.id;
-  
-  // 테스트용 고정 user_id 사용
-  const userId = 'b3e1c2d4-5f6a-7b8c-9d0e-1f2a3b4c5d6e';
-  
-  // 쿼리 파라미터 받기
-  const { searchParams } = new URL(req.url);
-  const movieId = searchParams.get('movie_id') || undefined;
-  const isRecommendedParam = searchParams.get('is_recommended');
-  let isRecommended: boolean | undefined = undefined;
-  if (isRecommendedParam === 'true') isRecommended = true;
-  if (isRecommendedParam === 'false') isRecommended = false;
-
-  // userId는 서버에서만 사용, 응답에만 포함
-  const data = await repo.getWatchedMovies({ userId, movieId, isRecommended });
-  const movies = (data || []).map((item: { movie_id: string; is_recommended: boolean }) => ({
-    movie_id: item.movie_id,
-    is_recommended: item.is_recommended,
-  }));
-  return NextResponse.json({
-    movies: movies,
-    total_count: movies.length
-  });
+    const savedWatch = await getSavedWatchUsecase.execute(userId);
+    return NextResponse.json({ savedWatch }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 404 });
+  }
 }
 
-export async function POST(req: Request) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return NextResponse.json({ error: 'No auth header' }, { status: 401 });
+export async function POST(req: NextRequest) {
+  try {
+    const authResult = verifyAuthTokens(req);
+    if (authResult.code !== "ok") {
+      return NextResponse.json(
+        { error: authResult.code },
+        { status: authResult.status }
+      );
+    }
+    const userId = authResult.userId;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Invalid token payload: userId missing" },
+        { status: 400 }
+      );
+    }
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const { movieId, isRecommended } = await req.json();
+    if (!movieId || !isRecommended) {
+      return NextResponse.json(
+        { error: "movieId, isRecommended are required" },
+        { status: 400 }
+      );
+    }
 
-  const userId = user.id;
+    const savedWatchRepository = new SbSavedWatchRepository(supabase);
+    const createSavedWatchUsecase = new CreateSavedWatchUsecase(
+      savedWatchRepository
+    );
 
-  const { movie_id, is_recommended } = await req.json();
-  if (!movie_id) return NextResponse.json({ error: 'movie_id is required' }, { status: 400 });
+    const createSavedWatchDto: CreateSavedWatchDto = {
+      userId,
+      movieId,
+      isRecommended,
+    };
 
-  await repo.addMovieWatch(userId, movie_id, is_recommended);
-  return NextResponse.json({ 
-    success: true, 
-    message: '영화가 찜 목록에 추가되었습니다.',
-    data: { movie_id, is_recommended }
-  });
-} 
+    const savedWatch = await createSavedWatchUsecase.execute(
+      createSavedWatchDto
+    );
+    return NextResponse.json({ savedWatch }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 404 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const authResult = verifyAuthTokens(req);
+    if (authResult.code !== "ok") {
+      return NextResponse.json(
+        { error: authResult.code },
+        { status: authResult.status }
+      );
+    }
+    const userId = authResult.userId;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Invalid token payload: userId missing" },
+        { status: 400 }
+      );
+    }
+
+    const { movieId } = await req.json();
+    if (!movieId) {
+      return NextResponse.json(
+        { error: "movieId is required" },
+        { status: 400 }
+      );
+    }
+
+    const savedWatchRepository = new SbSavedWatchRepository(supabase);
+    const deleteSavedWatchUsecase = new DeleteSavedWatchUsecase(
+      savedWatchRepository
+    );
+
+    await deleteSavedWatchUsecase.execute(userId, movieId);
+    return NextResponse.json(
+      { message: "Saved watch deleted" },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 404 });
+  }
+}
