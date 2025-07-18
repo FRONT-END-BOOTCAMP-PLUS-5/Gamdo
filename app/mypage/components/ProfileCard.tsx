@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 interface ProfileCardProps {
   userName: string;
@@ -6,19 +7,19 @@ interface ProfileCardProps {
   profileImageUrl: string;
 }
 
-const ProfileCard: React.FC<ProfileCardProps> = ({ userName, email, profileImageUrl }) => {
+const ProfileCard: React.FC<ProfileCardProps> = ({ userName, email }) => {
   return (
     <section
-      className="w-[1277px] h-[196px] bg-[#191B20]  border-black flex items-center px-10 mx-auto mt-6 relative"
-      style={{ boxSizing: 'border-box' }}
+      className="w-full h-[196px] bg-[#17181D] rounded-2xl flex items-center px-12 relative"
+      style={{ boxSizing: "border-box" }}
     >
-
       {/* 프로필 이미지 */}
-      <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#23262F] bg-[#23262F] flex-shrink-0 ml-2">
-        <img
-          src={profileImageUrl}
+      <div className="w-36 h-36 rounded-full overflow-hidden flex-shrink-0 relative">
+        <Image
+          src={"/assets/images/sample_profile_image.png"}
           alt="profile"
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
         />
       </div>
       {/* 유저 정보 */}
@@ -61,4 +62,4 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ userName, email, profileImage
   );
 };
 
-export default ProfileCard; 
+export default ProfileCard;
