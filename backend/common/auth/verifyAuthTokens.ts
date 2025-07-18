@@ -4,14 +4,14 @@ import jwt from "jsonwebtoken";
 
 type TokenStatusResult =
   | { code: "ok"; status: number; userId: string }
-  | { code: "no_token"; status: number }
-  | { code: "invalid"; status: number };
+  | { code: "액세스토큰이 없습니다."; status: number }
+  | { code: "액세스토큰이 유효하지 않습니다."; status: number };
 
 export function verifyAuthTokens(req: NextRequest): TokenStatusResult {
   const reqAccessToken = req.cookies.get("access_token")?.value;
 
   if (!reqAccessToken) {
-    return { code: "no_token", status: 401 };
+    return { code: "액세스토큰이 없습니다.", status: 401 };
   }
 
   try {
@@ -23,6 +23,6 @@ export function verifyAuthTokens(req: NextRequest): TokenStatusResult {
 
     return { code: "ok", status: 200, userId };
   } catch {
-    return { code: "invalid", status: 401 };
+    return { code: "액세스토큰이 유효하지 않습니다.", status: 401 };
   }
 }
