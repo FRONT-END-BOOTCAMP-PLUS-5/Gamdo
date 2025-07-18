@@ -22,3 +22,58 @@ body {
   font-display: swap;
   src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
 }
+
+.half-border-spin {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem; /* 버튼 둥글기와 맞추세요 */
+  width: 200px; /* 원하는 크기로 조정 */
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.half-border-spin::before {
+  content: "";
+  position: absolute;
+
+  top: -50%;
+  width: 150%;
+  height: 150%;
+  border-radius: 1rem;
+  background: conic-gradient(transparent 360deg, #56ebe1 360deg);
+  /* animation: rotate-half 1s linear infinite; */
+  z-index: 1;
+  transition: none;
+}
+
+/* 추천시작 버튼 효과 언제 할지 의논 후 해당 부분 삭제 */
+/* .half-border-spin:hover::before {
+  background: conic-gradient(transparent 180deg, #56ebe1 360deg);
+  animation: rotate-half 1s linear infinite;
+} */
+
+.half-border-spin.spin-active::before {
+  background: conic-gradient(transparent 180deg, #56ebe1 360deg);
+  animation: rotate-half 1s linear infinite;
+}
+
+.half-border-spin::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  height: 75%;
+  background: black; /* 버튼 내부 배경색, 필요에 따라 변경 */
+  border-radius: 1.7rem;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+@keyframes rotate-half {
+  100% {
+    transform: rotate(360deg);
+  }
+}
