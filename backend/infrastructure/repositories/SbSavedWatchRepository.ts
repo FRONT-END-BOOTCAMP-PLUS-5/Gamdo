@@ -1,53 +1,48 @@
-import { createClient } from '@supabase/supabase-js';
-import { SavedWatchRepository } from '../../domain/repositories/SavedWatchRepository';
-
-// 백엔드용 Supabase 클라이언트 생성
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-
-// user_id: uuid, movie_id: string(varchar), is_recommended: boolean
-// 예시: user_id = 'b3e1c2d4-5f6a-7b8c-9d0e-1f2a3b4c5d6e', movie_id = '155', is_recommended = true
+import { SavedWatch } from "@/backend/domain/entities/SavedWatch";
+import { SavedWatchRepository } from "@/backend/domain/repositories/SavedWatchRepository";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Mapper } from "../mappers/Mapper";
+import { SavedWatchTable } from "../types/database";
 
 export class SbSavedWatchRepository implements SavedWatchRepository {
-  async getWatchedMovies({
-    userId,
-    movieId,
-    isRecommended,
-  }: {
-    userId?: string;
-    movieId?: string;
-    isRecommended?: boolean;
-  }): Promise<{ movie_id: string; is_recommended: boolean }[]> {
-    let query = supabase
-      .from('saved_watch')
-      .select('movie_id, is_recommended');
+  constructor(private supabase: SupabaseClient) {}
 
-    if (userId) query = query.eq('user_id', userId);
-    if (movieId) query = query.eq('movie_id', movieId);
-    if (isRecommended !== undefined) query = query.eq('is_recommended', isRecommended);
+  async saveSavedWatch(savedWatchData: SavedWatch): Promise<SavedWatch> {
+    const { data, error } = await this.supabase
+      .from("saved_watch")
+      .insert({
+        user_id: savedWatchData.userId,
+        movie_id: savedWatchData.movieId,
+        is_recommended: savedWatchData.isRecommended,
+      })
+      .select()
+      .single();
 
-    const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data || []) as { movie_id: string; is_recommended: boolean }[];
+    return Mapper.toSavedWatch(data as unknown as SavedWatchTable);
+    new SavedWatch(data.user_id, data.movie_id, data.is_recommended);
   }
 
-  async addMovieWatch(
-    user_id: string, // uuid
-    movie_id: string, // varchar
-    is_recommended: boolean // boolean
-  ) {
-    // 예시: user_id = 'b3e1c2d4-5f6a-7b8c-9d0e-1f2a3b4c5d6e', movie_id = '155', is_recommended = true
-    const { error } = await supabase.from('saved_watch').insert([
-      {
-        user_id,
-        movie_id,
-        is_recommended,
-      },
-    ]);
+  async deleteSavedWatch(userId: string, movieId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("saved_watch")
+      .delete()
+      .eq("user_id", userId)
+      .eq("movie_id", movieId);
     if (error) throw new Error(error.message);
+  }
+
+  async findSavedWatch(userId: string): Promise<SavedWatch[]> {
+    const { data, error } = await this.supabase
+      .from("saved_watch")
+      .select("*")
+      .eq("user_id", userId);
+
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) return [];
+
+    return data.map((item) =>
+      Mapper.toSavedWatch(item as unknown as SavedWatchTable)
+    );
   }
 }
- 
