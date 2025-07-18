@@ -13,7 +13,7 @@ import { useState } from "react";
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
 
-  const weatherButtons = ["맑음", "흐림", "비", "눈", "우박", "안개"];
+  const weatherButtons = ["맑음", "흐림", "비", "눈", "번개"];
   const emotionButtons = [
     "기쁨",
     "슬픔",
@@ -51,19 +51,42 @@ const RecommenderPage = () => {
         {/* 날씨 + 사용자 정보 감싸는 섹션 */}
         <div className="flex-1 flex-col">
           {/* 날씨 */}
-          <div
-            style={{
-              backgroundImage: "url('/assets/images/weather_rain.png')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-            className="flex h-1/2 rounded-2xl"
-          >
+          <div className="flex h-1/2 rounded-2xl relative overflow-hidden">
+            {/* 기존 배경 이미지 코드 */}
+            {/* <div
+              style={{
+                backgroundImage: "url('/assets/images/weather_rain.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }}
+              className="flex h-1/2 rounded-2xl"
+            > */}
+
+            {/* 배경 비디오 */}
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ zIndex: 0 }}
+            >
+              <source src="/assets/videos/weather_sunny.mp4" type="video/mp4" />
+            </video>
+
+            {/* 비디오 위에 반투명 오버레이 레이어 */}
+            <div
+              className="absolute inset-0 w-full h-full"
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                zIndex: 5,
+              }}
+            />
             {/* 날씨 왼쪽 섹션 */}
             {/* 일단 배경색 넣어놓았으나 배경 이미지 달라진다면 JS이용해서 바꿔야하는데.. */}
             <div
-              style={{ backgroundColor: "#5A736E77" }}
+              style={{ backgroundColor: "#00000012", zIndex: 10 }}
               className="flex flex-col m-5 p-10 text-white rounded-xl relative"
             >
               <TiWeatherDownpour
@@ -93,7 +116,10 @@ const RecommenderPage = () => {
               </div>
             </div>
             {/* 날씨 오른쪽 섹션*/}
-            <div className="flex-1 m-5 text-white">
+            <div
+              className="flex-1 m-5 text-white relative"
+              style={{ zIndex: 10 }}
+            >
               <div className="flex h-1/2 items-center px-5 text-2xl leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
                 <br />
@@ -101,7 +127,7 @@ const RecommenderPage = () => {
               </div>
               {/* 날씨 버튼 컴포넌트 ex)맑음, 흐림 ...*/}
               <div
-                style={{ backgroundColor: "#5A736E77" }}
+                style={{ backgroundColor: "#00000012" }}
                 className="flex h-1/2 justify-center items-center px-5 gap-2 rounded-xl"
               >
                 {weatherButtons.map((item, idx) => {
@@ -201,10 +227,11 @@ const RecommenderPage = () => {
         </div>
         {/* 추천 시작 버튼 */}
         {/* 뒤에 이미지를 추가해야돼서 버튼 컴포넌트 사용 못해서 직접 작성함*/}
+        {/* 이 부분 spin 애니메이션 적용때문에 css수정하려면 globals.css 수정해야합니다. */}
 
         <div className="flex my-10 justify-center items-center">
           <button
-            className={`text-2xl hover:cursor-pointer half-border-spin ${
+            className={`hover:cursor-pointer half-border-spin text-3xl ${
               spin ? " spin-active" : ""
             }`}
             onClick={() => setSpin(!spin)}
@@ -227,7 +254,7 @@ const RecommenderPage = () => {
               {spin ? "ㅤ추천 중 .." : "ㅤ추천 시작"}
               <WiStars
                 style={{ color: "#56EBE1" }}
-                size={32}
+                size={40}
                 className="ml-2 justify-center items-center"
               />
             </span>
