@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { ReviewRepositoryImpl } from "../../../backend/infrastructure/repositories/ReviewRepositoryImpl";
 import { CreateReviewUseCase } from "../../../backend/application/review/CreateReviewUseCase";
 import { GetMovieDetailsUseCase } from "../../../backend/application/movies/usecases/GetMovieDetailsUseCase";
-import { TmdbApi } from "../../../utils/tmdb/TmdbApi";
 
 const reviewRepository = new ReviewRepositoryImpl();
 const createReviewUseCase = new CreateReviewUseCase(reviewRepository);
-const getMovieDetailsUseCase = new GetMovieDetailsUseCase(TmdbApi);
+const getMovieDetailsUseCase = new GetMovieDetailsUseCase();
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +34,7 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
-    const movie = await getMovieDetailsUseCase.execute(movieId);
+    const movie = await getMovieDetailsUseCase.execute(Number(movieId));
     return NextResponse.json({ movie });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
