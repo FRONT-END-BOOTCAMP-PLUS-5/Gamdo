@@ -12,11 +12,10 @@ import { WiDaySunny, WiCloudy, WiSnow, WiFog } from "react-icons/wi";
 import PosterCard from "@/app/components/PosterCard";
 import Button from "./components/Button";
 import { useState, useEffect } from "react";
+import Image from "next/image"; // next/image 추가
 import { getLocationWeatherData } from "../../../utils/supabase/recommenders/weather";
 import { ParsedWeatherInfo } from "../../../backend/domain/entities/recommenders/weather";
 import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
-import { TmdbApi } from "../../../utils/tmdb/TmdbApi";
-import NoPoster from "./components/NoPoster";
 
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
@@ -90,68 +89,44 @@ const RecommenderPage = () => {
 
   const [movieTitles, setMovieTitles] = useState<string[]>([]);
   const [posterInfos, setPosterInfos] = useState<
-    { posterUrl: string | null; title: string }[]
+    { posterUrl: string; title: string }[]
   >([
-    { posterUrl: null, title: "" },
-    { posterUrl: null, title: "" },
-    { posterUrl: null, title: "" },
-    { posterUrl: null, title: "" },
+    { posterUrl: "", title: "" },
+    { posterUrl: "", title: "" },
+    { posterUrl: "", title: "" },
+    { posterUrl: "", title: "" },
   ]);
-
-  // 영화 제목에서 한글/영문 분리
-  function parseMovieTitle(title: string): {
-    korean: string;
-    english: string | null;
-  } {
-    const match = title.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
-    if (match) {
-      const korean = match[1].trim();
-      const english = match[2].trim();
-      if (/^\d{4}$/.test(english)) return { korean, english: null };
-      return { korean, english };
-    }
-    return { korean: title, english: null };
-  }
-
-  // TMDB에서 한글→영문 순으로 검색
-  async function searchMoviePoster(title: string) {
-    const { korean, english } = parseMovieTitle(title);
-    // 1. 한글로 검색
-    let result: {
-      results?: {
-        media_type: string;
-        poster_path?: string;
-        title?: string;
-        name?: string;
-      }[];
-    } = await TmdbApi.searchMulti(korean);
-    let movie = result?.results?.find(
-      (item) => item.media_type === "movie" && item.poster_path
-    );
-    // 2. 없으면 영문으로 검색
-    if (!movie && english) {
-      result = await TmdbApi.searchMulti(english);
-      movie = result?.results?.find(
-        (item) => item.media_type === "movie" && item.poster_path
-      );
-    }
-    if (movie) {
-      return {
-        posterUrl: movie.poster_path
-          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-          : "",
-        title: movie.title || movie.name || title,
-      };
-    }
-    return { posterUrl: "", title };
-  }
 
   // AI 추천 결과에서 영화 제목 4개 추출 후 포스터 검색
   useEffect(() => {
     if (!movieTitles || movieTitles.length === 0) return;
-    const top4 = movieTitles.slice(0, 4);
+    const top10 = movieTitles.slice(0, 10); // 최대 10개만 시도
     (async () => {
-      const posters = await Promise.all(top4.map(searchMoviePoster));
+      // 포스터가 있는 영화만 배열에 담기 위한 임시 배열
+      const posters: { posterUrl: string; title: string }[] = [];
+      for (const title of top10) {
+        const response = await fetch(
+          `/api/movies/search?query=${encodeURIComponent(title)}&page=1`
+        );
+        const data = await response.json();
+        // poster_path가 있는 영화만 추출
+        const movie = data.results?.find(
+          (item: {
+            media_type: string;
+            poster_path?: string;
+            title?: string;
+            name?: string;
+          }) => item.media_type === "movie" && item.poster_path
+        );
+        if (movie && movie.poster_path) {
+          posters.push({
+            posterUrl: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+            title: movie.title || movie.name || title,
+          });
+        }
+        // 4개만 모이면 중단
+        if (posters.length >= 4) break;
+      }
       setPosterInfos(posters);
     })();
   }, [movieTitles]);
@@ -213,11 +188,7 @@ const RecommenderPage = () => {
       if (Array.isArray(data.data.movieTitles)) {
         setMovieTitles(data.data.movieTitles);
       }
-
-      // AI 추천 완료 시 spin 상태를 false로 변경
-      setSpin(false);
-
-      // 로딩 토스트를 성공 토스트로 업데이트
+      // setSpin(false); // 에러 시에는 즉시 spin false
       toast.update(loadingToast, {
         render: "🎬 영화 추천이 완료되었습니다!",
         type: "success",
@@ -228,16 +199,31 @@ const RecommenderPage = () => {
       });
     } catch (error) {
       console.error("AI 추천 요청 중 오류:", error);
-      // 에러 발생 시에도 spin 상태를 false로 변경
-      setSpin(false);
-
-      // 에러 토스트 표시
+      setSpin(false); // 에러 시에는 즉시 spin false
       toast.error("❌ 영화 추천에 실패했습니다. 다시 시도해주세요.", {
         position: "top-center",
         autoClose: 3000,
       });
     }
   };
+
+  // 포스터 이미지 로딩 완료 개수 상태
+  const [loadedCount, setLoadedCount] = useState(0);
+
+  // posterInfos가 바뀔 때마다 loadedCount 초기화 + 추천 결과가 0개면 spin false
+  useEffect(() => {
+    setLoadedCount(0);
+    if (posterInfos.length === 0) {
+      setSpin(false); // 추천 결과가 없을 때도 spin을 false로
+    }
+  }, [posterInfos]);
+
+  // 모든 포스터 이미지가 렌더링(onLoad)된 경우에만 spin을 false로 변경
+  useEffect(() => {
+    if (posterInfos.length > 0 && loadedCount === posterInfos.length) {
+      setSpin(false);
+    }
+  }, [loadedCount, posterInfos]);
 
   // 날씨 상태에 따른 아이콘 반환 함수
   const getWeatherIcon = (weatherData: ParsedWeatherInfo | null) => {
@@ -566,50 +552,96 @@ const RecommenderPage = () => {
       <div className="flex justify-between items-center h-180 mt-30">
         {/* 왼쪽 포스터 카드 */}
         <div className="flex w-1/6 h-3/4 justify-center relative group">
-          {posterInfos[0]?.posterUrl ? (
-            <PosterCard
-              imageUrl={posterInfos[0].posterUrl}
-              name={posterInfos[0].title || "1"}
-              className="w-full h-full group-hover:scale-110 transition-transform duration-300"
-            />
-          ) : (
-            <NoPoster className="w-full h-full" />
+          {/* posterUrl이 있는 경우에만 렌더링 */}
+          {posterInfos[0] && posterInfos[0].posterUrl && (
+            <>
+              <PosterCard
+                imageUrl={posterInfos[0].posterUrl}
+                name={posterInfos[0].title || "1"}
+                className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+              />
+              {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
+              <div style={{ position: "relative", width: 0, height: 0 }}>
+                <Image
+                  src={posterInfos[0].posterUrl}
+                  alt=""
+                  fill
+                  style={{ display: "none" }}
+                  onLoad={() => setLoadedCount((count) => count + 1)}
+                  sizes="(max-width: 768px) 100vw, 308px"
+                  priority
+                />
+              </div>
+            </>
           )}
           <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
         </div>
         {/* 가운데 포스터 카드 */}
         <div className="flex w-3/5 h-1/1 mx-20">
           {/* 가운데 왼쪽 */}
-          {posterInfos[1]?.posterUrl ? (
-            <PosterCard
-              imageUrl={posterInfos[1].posterUrl}
-              name={posterInfos[1].title || "2"}
-              className="mr-2.5 max-w-full max-h-full object-contain"
-            />
-          ) : (
-            <NoPoster className="mr-2.5 max-w-full max-h-full object-contain w-full h-full" />
+          {posterInfos[1] && posterInfos[1].posterUrl && (
+            <>
+              <PosterCard
+                imageUrl={posterInfos[1].posterUrl}
+                name={posterInfos[1].title || "2"}
+                className="mr-2.5 max-w-full max-h-full object-contain"
+              />
+              <div style={{ position: "relative", width: 0, height: 0 }}>
+                <Image
+                  src={posterInfos[1].posterUrl}
+                  alt=""
+                  fill
+                  style={{ display: "none" }}
+                  onLoad={() => setLoadedCount((count) => count + 1)}
+                  sizes="(max-width: 768px) 100vw, 308px"
+                  priority
+                />
+              </div>
+            </>
           )}
           {/* 가운데 오른쪽 */}
-          {posterInfos[2]?.posterUrl ? (
-            <PosterCard
-              imageUrl={posterInfos[2].posterUrl}
-              name={posterInfos[2].title || "3"}
-              className="ml-2.5 max-w-full max-h-full object-contain"
-            />
-          ) : (
-            <NoPoster className="ml-2.5 max-w-full max-h-full object-contain w-full h-full" />
+          {posterInfos[2] && posterInfos[2].posterUrl && (
+            <>
+              <PosterCard
+                imageUrl={posterInfos[2].posterUrl}
+                name={posterInfos[2].title || "3"}
+                className="ml-2.5 max-w-full max-h-full object-contain"
+              />
+              <div style={{ position: "relative", width: 0, height: 0 }}>
+                <Image
+                  src={posterInfos[2].posterUrl}
+                  alt=""
+                  fill
+                  style={{ display: "none" }}
+                  onLoad={() => setLoadedCount((count) => count + 1)}
+                  sizes="(max-width: 768px) 100vw, 308px"
+                  priority
+                />
+              </div>
+            </>
           )}
         </div>
         {/* 오른쪽 포스터 카드 */}
         <div className="flex w-1/5 h-3/4 relative group">
-          {posterInfos[3]?.posterUrl ? (
-            <PosterCard
-              imageUrl={posterInfos[3].posterUrl}
-              name={posterInfos[3].title || "4"}
-              className="ml-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
-            />
-          ) : (
-            <NoPoster className="ml-10 max-w-full max-h-full object-contain w-full h-full" />
+          {posterInfos[3] && posterInfos[3].posterUrl && (
+            <>
+              <PosterCard
+                imageUrl={posterInfos[3].posterUrl}
+                name={posterInfos[3].title || "4"}
+                className="ml-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+              />
+              <div style={{ position: "relative", width: 0, height: 0 }}>
+                <Image
+                  src={posterInfos[3].posterUrl}
+                  alt=""
+                  fill
+                  style={{ display: "none" }}
+                  onLoad={() => setLoadedCount((count) => count + 1)}
+                  sizes="(max-width: 768px) 100vw, 308px"
+                  priority
+                />
+              </div>
+            </>
           )}
           <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
         </div>
