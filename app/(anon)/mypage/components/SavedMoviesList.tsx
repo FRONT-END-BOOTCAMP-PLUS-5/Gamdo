@@ -1,23 +1,35 @@
+"use client";
+import { CreateSavedWatchDto } from "@/backend/application/saved-watch/dtos/CreateSavedWatchDto";
+import axios from "@/utils/axios";
+import { useEffect, useState } from "react";
 import { FaBookmark } from "react-icons/fa";
 
-const dummyMovies = [
-  {
-    movie_id: "299534",
-    title: "어벤져스: 엔드게임",
-    poster: "/assets/posters/avengers.jpg",
-  },
-  {
-    movie_id: "155",
-    title: "다크 나이트",
-    poster: "/assets/posters/darkknight.jpg",
-  },
-  { movie_id: "123", title: "인턴", poster: "/assets/posters/intern.jpg" },
-  { movie_id: "456", title: "A.I.", poster: "/assets/posters/ai.jpg" },
-  { movie_id: "789", title: "Her", poster: "/assets/posters/her.jpg" },
-  { movie_id: "101", title: "워 호스", poster: "/assets/posters/warhorse.jpg" },
-];
+interface SavedMoviesListProps {
+  items: CreateSavedWatchDto[];
+  totalCount: number;
+}
 
 export default function SavedMoviesList() {
+  const [savedMovies, setSavedMovies] = useState<SavedMoviesListProps>({
+    items: [],
+    totalCount: 0,
+  });
+
+  useEffect(() => {
+    const fetchSavedMovies = async () => {
+      try {
+        const response = await axios.get("/saved-watch?maxLength=6");
+        console.log("API Response:", response.data);
+        setSavedMovies(response.data);
+      } catch (error) {
+        console.error("Error fetching saved movies:", error);
+      }
+    };
+    fetchSavedMovies();
+  }, []);
+
+  console.log("Current state:", savedMovies);
+
   return (
     <div className="mb-2 relative w-fit">
       {/* 볼래요 헤더 (박스 밖) */}
@@ -25,7 +37,7 @@ export default function SavedMoviesList() {
         <span>볼래요</span>
         <FaBookmark className="text-[20px] text-white" />
         <span className="text-white text-xl font-medium">
-          ({dummyMovies.length})
+          ({savedMovies.totalCount})
         </span>
       </div>
       {/* 더보기 버튼을 박스 밖 맨 오른쪽에 배치 */}
@@ -35,14 +47,20 @@ export default function SavedMoviesList() {
       {/* 볼래요 박스 */}
       <div className="flex justify-center items-center bg-[#17181D] rounded-xl pl-6 pr-6 w-[467px] min-h-[460px]">
         <div className="grid grid-cols-3 grid-rows-2 gap-4 h-full">
-          {dummyMovies.slice(0, 6).map((movie) => (
-            <div
-              key={movie.movie_id}
-              className="flex flex-col items-center justify-center"
-            >
-              <div className="w-[137px] h-[202px] bg-gray-700 rounded"></div>
+          {savedMovies.items.length > 0 ? (
+            savedMovies.items.map((movie) => (
+              <div
+                key={movie.movieId}
+                className="flex flex-col items-center justify-center"
+              >
+                <div className="w-[137px] h-[202px] bg-gray-700 rounded"></div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-3 row-span-2 flex items-center justify-center text-gray-500">
+              찜한 영화가 없습니다
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
