@@ -80,13 +80,13 @@ const RecommenderPage = () => {
               className="absolute inset-0 w-full h-full"
               style={{
                 backgroundColor: "rgba(0, 0, 0, 0.3)",
-                zIndex: 5,
+                zIndex: 0,
               }}
             />
             {/* 날씨 왼쪽 섹션 */}
             {/* 일단 배경색 넣어놓았으나 배경 이미지 달라진다면 JS이용해서 바꿔야하는데.. */}
             <div
-              style={{ backgroundColor: "#00000012", zIndex: 10 }}
+              style={{ backgroundColor: "#00000012", zIndex: 2 }}
               className="flex flex-col m-5 p-10 text-white rounded-xl relative"
             >
               <TiWeatherDownpour
@@ -118,7 +118,7 @@ const RecommenderPage = () => {
             {/* 날씨 오른쪽 섹션*/}
             <div
               className="flex-1 m-5 text-white relative"
-              style={{ zIndex: 10 }}
+              style={{ zIndex: 2 }}
             >
               <div className="flex h-1/2 items-center px-5 text-2xl leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
