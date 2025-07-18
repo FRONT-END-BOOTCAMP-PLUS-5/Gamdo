@@ -5,28 +5,157 @@ import { WiStars } from "react-icons/wi";
 import { SiCoffeescript } from "react-icons/si";
 import { MdLocalMovies } from "react-icons/md";
 import { CiTimer } from "react-icons/ci";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import PosterCard from "@/app/components/PosterCard";
 import Button from "./components/Button";
 import { useState, useEffect } from "react";
-import { getCurrentPosition } from "../../../utils/supabase/recommenders/geolocation";
+import { getLocationWeatherData } from "../../../utils/supabase/recommenders/weather";
 
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
+  const [weatherData, setWeatherData] = useState<unknown>(null);
 
-  // 페이지 렌더링 시 위치 정보 자동 가져오기
+  // 선택된 버튼들을 관리하는 state
+  const [selectedWeather, setSelectedWeather] = useState<string[]>([]);
+  const [selectedEmotion, setSelectedEmotion] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
+  const [selectedTime, setSelectedTime] = useState<string[]>([]);
+
+  // 공통 버튼 선택/해제 함수
+  const toggleSelection = (
+    category: "weather" | "emotion" | "category" | "time",
+    value: string
+  ) => {
+    switch (category) {
+      case "weather":
+        setSelectedWeather((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case "emotion":
+        setSelectedEmotion((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case "category":
+        setSelectedCategory((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case "time":
+        setSelectedTime((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+    }
+  };
+
+  // 페이지 렌더링 시 위치 정보와 날씨 정보 자동 가져오기
   useEffect(() => {
-    const getLocation = async () => {
+    const getLocationAndWeather = async () => {
       try {
-        const position = await getCurrentPosition();
-        console.log("위치 정보를 성공적으로 가져왔습니다:", position);
+        const result = await getLocationWeatherData();
+        console.log("위치 정보와 날씨 정보를 성공적으로 가져왔습니다:", result);
+        console.log("위치:", result.position);
+        console.log("격자 좌표:", result.gridCoordinates);
+        console.log("주소:", result.address);
+        console.log("날씨 정보:", result.weatherData);
+        setWeatherData(result.weatherData);
       } catch (error) {
-        console.error("위치 정보를 가져올 수 없습니다:", error);
+        console.error("위치 정보나 날씨 정보를 가져올 수 없습니다:", error);
       }
     };
 
-    getLocation();
+    getLocationAndWeather();
   }, []);
+
+  // AI 추천 요청 함수
+  const handleRecommendation = async () => {
+    try {
+      console.log("AI 추천 요청 시작");
+      console.log("현재 날씨:", weatherData);
+      console.log("선택된 정보:", {
+        weather: selectedWeather,
+        emotion: selectedEmotion,
+        category: selectedCategory,
+        time: selectedTime,
+      });
+
+      // 로딩 토스트 표시
+      const loadingToast = toast.loading("🎬 영화를 추천하고 있습니다...", {
+        position: "top-center",
+        autoClose: false,
+        closeButton: false,
+        draggable: false,
+      });
+
+      // AI API 호출
+      const response = await fetch("/api/geminis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "movie-recommendation",
+          weather: weatherData,
+          userSelection: {
+            weather: selectedWeather,
+            emotion: selectedEmotion,
+            category: selectedCategory,
+            time: selectedTime,
+          },
+          temperature: 0.7,
+          max_tokens: 4096,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI 추천 요청 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("AI 응답:", data);
+
+      if (!data.success || !data.data) {
+        throw new Error(data.error || "AI 추천을 받을 수 없습니다.");
+      }
+
+      console.log("AI 추천 성공:", data.data);
+
+      // AI 추천 완료 시 spin 상태를 false로 변경
+      setSpin(false);
+
+      // 로딩 토스트를 성공 토스트로 업데이트
+      toast.update(loadingToast, {
+        render: "🎬 영화 추천이 완료되었습니다!",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+        closeButton: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error("AI 추천 요청 중 오류:", error);
+      // 에러 발생 시에도 spin 상태를 false로 변경
+      setSpin(false);
+
+      // 에러 토스트 표시
+      toast.error("❌ 영화 추천에 실패했습니다. 다시 시도해주세요.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+    }
+  };
 
   const weatherButtons = ["맑음", "흐림", "비", "눈", "우박", "안개"];
   const emotionButtons = [
@@ -54,6 +183,20 @@ const RecommenderPage = () => {
   return (
     // 전체 wrap
     <div className="flex flex-col">
+      {/* ToastContainer 추가 */}
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+
       {/* 취향에 딱 맞춘 영화 */}
       <div className="flex mb-15 justify-center text-white text-5xl">
         취향에 딱 맞춘 영화를 추천해드릴게요
@@ -120,11 +263,15 @@ const RecommenderPage = () => {
                 className="flex h-1/2 justify-center items-center px-5 gap-2 rounded-xl"
               >
                 {weatherButtons.map((item, idx) => {
+                  const isSelected = selectedWeather.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("weather", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -151,11 +298,15 @@ const RecommenderPage = () => {
 
               <div className="inline-flex flex-wrap w-full justify-between">
                 {emotionButtons.map((item, idx) => {
+                  const isSelected = selectedEmotion.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("emotion", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -176,11 +327,15 @@ const RecommenderPage = () => {
 
               <div className="inline-flex flex-wrap w-full justify-between">
                 {categoryButtons.map((item, idx) => {
+                  const isSelected = selectedCategory.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("category", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -202,11 +357,15 @@ const RecommenderPage = () => {
 
               <div className="inline-flex flex-wrap w-full justify-between">
                 {timeButtons.map((item, idx) => {
+                  const isSelected = selectedTime.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("time", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -222,7 +381,10 @@ const RecommenderPage = () => {
             className={`text-2xl hover:cursor-pointer half-border-spin ${
               spin ? " spin-active" : ""
             }`}
-            onClick={() => setSpin(!spin)}
+            onClick={() => {
+              setSpin(!spin);
+              handleRecommendation();
+            }}
             style={{
               borderColor: "#56EBE1",
               color: "#56EBE1",
