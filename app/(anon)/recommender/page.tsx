@@ -8,10 +8,25 @@ import { CiTimer } from "react-icons/ci";
 
 import PosterCard from "@/app/components/PosterCard";
 import Button from "./components/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getCurrentPosition } from "../../../utils/supabase/recommenders/geolocation";
 
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
+
+  // 페이지 렌더링 시 위치 정보 자동 가져오기
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        const position = await getCurrentPosition();
+        console.log("위치 정보를 성공적으로 가져왔습니다:", position);
+      } catch (error) {
+        console.error("위치 정보를 가져올 수 없습니다:", error);
+      }
+    };
+
+    getLocation();
+  }, []);
 
   const weatherButtons = ["맑음", "흐림", "비", "눈", "우박", "안개"];
   const emotionButtons = [
