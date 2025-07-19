@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 
 interface CalendarImageEvent {
   id: string;
@@ -49,24 +49,26 @@ const CustomCalendarSection: React.FC = () => {
     const firstDay = new Date(year, month, 1).getDay();
     const cells = [];
     for (let i = 0; i < firstDay; i++) {
-      cells.push(<div key={'empty-' + i} />);
+      cells.push(<div key={"empty-" + i} />);
     }
     for (let d = 1; d <= days; d++) {
-      const dateStr = new Date(year, month, d).toISOString().split('T')[0];
+      const dateStr = new Date(year, month, d).toISOString().split("T")[0];
       const dayEvent = events.find((e) => e.date === dateStr);
       cells.push(
         <div
           key={dateStr}
-          className="flex flex-col rounded-md p-1 h-[100px] w-[80px] bg-white relative group cursor-pointer"
+          className="flex flex-col rounded-md p-1 h-[120px] w-[80px] bg-white relative group cursor-pointer"
           onClick={() => {
             setSelectedDate(dateStr);
             if (fileInputRef.current) {
-              fileInputRef.current.value = '';
+              fileInputRef.current.value = "";
               fileInputRef.current.click();
             }
           }}
         >
-          <span className="text-gray-700 text-sm absolute left-1 top-1">{d}</span>
+          <span className="text-gray-700 text-sm absolute left-1 top-1">
+            {d}
+          </span>
           {dayEvent && (
             <img
               src={dayEvent.imageUrl}
@@ -89,36 +91,53 @@ const CustomCalendarSection: React.FC = () => {
 
   // 월 이동
   const handlePrevMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setCurrentDate(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+    );
   };
   const handleNextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setCurrentDate(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+    );
   };
 
   return (
-    <div className="flex flex-col min-h-[880px] w-[631px] bg-[#23242b] py-8 px-4 rounded-xl">
-      <div className="bg-white rounded-3xl shadow-2xl p-6 pb-10 w-full h-full">
-        {/* 캘린더 헤더 */}
-        <div className="flex items-center justify-between mb-8">
-          <button onClick={handlePrevMonth} className="text-[#23242b] text-xl font-bold">◀</button>
-          <span className="text-xl font-semibold text-gray-800">{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</span>
-          <button onClick={handleNextMonth} className="text-[#23242b] text-xl font-bold">▶</button>
+    <>
+      <div className="text-xl font-medium mb-4">캘린더</div>
+      <div className="flex flex-col min-h-[832px] w-[631px] bg-[#17181D] rounded-xl">
+        <div className="bg-white rounded-xl px-6 py-10 w-full h-full">
+          {/* 캘린더 헤더 */}
+          <div className="flex items-center justify-between mb-20">
+            <button
+              onClick={handlePrevMonth}
+              className="text-[#23242b] text-xl font-bold"
+            >
+              ◀
+            </button>
+            <span className="text-xl font-semibold text-gray-800">
+              {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+            </span>
+            <button
+              onClick={handleNextMonth}
+              className="text-[#23242b] text-xl font-bold"
+            >
+              ▶
+            </button>
+          </div>
+          {/* 캘린더 날짜 그리드 */}
+          <div className="grid grid-cols-7 gap-2">{renderDays()}</div>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
         </div>
-        {/* 캘린더 날짜 그리드 */}
-        <div className="grid grid-cols-7 gap-2">
-          {renderDays()}
-        </div>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          disabled={uploading}
-        />
       </div>
-    </div>
+    </>
   );
 };
 
-export default CustomCalendarSection; 
+export default CustomCalendarSection;

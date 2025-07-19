@@ -1,5 +1,5 @@
-import { SearchRepository } from "../../domain/repositories/SearchRepository";
-import { SearchResponse } from "../../domain/entities/SearchResult";
+import { SearchRepository } from "@/backend/domain/repositories/movies/SearchRepository";
+import { SearchResponse } from "@/backend/domain/entities/movies/SearchResult";
 
 export class SearchMultiUseCase {
   constructor(private searchRepository: SearchRepository) {}
