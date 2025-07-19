@@ -675,7 +675,7 @@ const RecommenderPage = () => {
       {showPosters && (
         <div
           id="poster-section"
-          className="flex justify-between items-center h-180 mt-30"
+          className="flex justify-between items-center h-180 mt-30 overflow-hidden"
         >
           {/* 왼쪽 포스터 카드 */}
           <div className="flex w-1/6 h-3/4 justify-center relative group">
@@ -749,13 +749,13 @@ const RecommenderPage = () => {
             )}
           </div>
           {/* 오른쪽 포스터 카드 */}
-          <div className="flex w-1/5 h-3/4 relative group">
+          <div className="flex w-1/6 h-3/4 relative group">
             {posterInfos[3] && posterInfos[3].posterUrl && (
               <>
                 <PosterCard
                   imageUrl={posterInfos[3].posterUrl}
                   name={posterInfos[3].title || "4"}
-                  className="ml-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                  className=" max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
                 />
                 <div style={{ position: "relative", width: 0, height: 0 }}>
                   <Image
