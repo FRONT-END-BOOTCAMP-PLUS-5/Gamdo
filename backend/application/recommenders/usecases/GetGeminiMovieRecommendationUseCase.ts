@@ -31,7 +31,8 @@ export class GetGeminiMovieRecommendationUseCase {
       // 1. 비즈니스 로직: 프롬프트 생성
       const prompt = this.generateEnhancedMovieRecommendationPrompt(
         request.weather,
-        request.userSelection
+        request.userSelection,
+        request.previousMovieTitles || [] // 이전 영화 목록 전달
       );
 
       // 2. Gemini 응답 생성
@@ -126,7 +127,8 @@ export class GetGeminiMovieRecommendationUseCase {
    */
   private generateEnhancedMovieRecommendationPrompt(
     weather: WeatherInfo,
-    userSelection: UserSelectionInfo
+    userSelection: UserSelectionInfo,
+    previousMovieTitles: string[]
   ): string {
     const temp = weather.currentTemp ? `${weather.currentTemp}°C` : "정보 없음";
     const humidity = weather.humidity ? `${weather.humidity}%` : "정보 없음";
@@ -150,12 +152,19 @@ export class GetGeminiMovieRecommendationUseCase {
       })
       .join(", ");
 
-    return `현재 날씨 정보: 온도 ${temp}, 습도 ${humidity}, 체감온도 ${feelsLike}
+    // 이전 영화 목록을 프롬프트에 포함
+    const previousMoviesText =
+      previousMovieTitles.length > 0
+        ? `이전에 추천받은 영화: ${previousMovieTitles.join(", ")}.\n`
+        : "";
+
+    return `${previousMoviesText}현재 날씨 정보: 온도 ${temp}, 습도 ${humidity}, 체감온도 ${feelsLike}
 사용자 선호 정보: ${userPreferences}
 
 위 정보를 바탕으로 최적의 영화 10개를 추천.
 - 날씨와 사용자의 모든 선호 정보를 종합적으로 고려.
 - 해리포터 시리즈와 같이 영화 시리즈라고 추천하지말고 딱 하나의 영화만 추천.
+- 이전에 추천받은 영화와 중복되지 않도록 다른 영화를 추천.
 - 추천 이유나 기타 부연설명은 넣지말고 다음과 같은 형태로만 응답.
 - 영화 제목은 기본은 한글, 괄호로 영어 제목으로 ex) 슈퍼맨(Superman) 이런식으로 추천.
 

@@ -5,15 +5,490 @@ import { WiStars } from "react-icons/wi";
 import { SiCoffeescript } from "react-icons/si";
 import { MdLocalMovies } from "react-icons/md";
 import { CiTimer } from "react-icons/ci";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { WiDaySunny, WiCloudy } from "react-icons/wi";
 
 import PosterCard from "@/app/components/PosterCard";
 import Button from "./components/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Image from "next/image"; // next/image 추가
+import { getLocationWeatherData } from "../../../utils/supabase/recommenders/weather";
+import { ParsedWeatherInfo } from "../../../backend/domain/entities/recommenders/weather";
+import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
+  const [weatherData, setWeatherData] = useState<ParsedWeatherInfo | null>(
+    null
+  );
+  const [addressInfo, setAddressInfo] = useState<AddressInfo | null>(null);
 
-  const weatherButtons = ["맑음", "흐림", "비", "눈", "우박", "안개"];
+  // 선택된 버튼들을 관리하는 state
+  const [selectedWeather, setSelectedWeather] = useState<string>(""); // 날씨는 단일 선택
+  const [selectedEmotion, setSelectedEmotion] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
+  const [selectedTime, setSelectedTime] = useState<string[]>([]);
+
+  // 공통 버튼 선택/해제 함수
+  const toggleSelection = (
+    category: "weather" | "emotion" | "category" | "time",
+    value: string
+  ) => {
+    // 버튼 클릭 시 해당 카테고리의 에러 상태 초기화
+    setValidationErrors((prev) => ({
+      ...prev,
+      [category]: false,
+    }));
+
+    switch (category) {
+      case "weather":
+        // 날씨는 하나만 선택 가능 (라디오 버튼 방식)
+        setSelectedWeather((prev) => (prev === value ? "" : value));
+        break;
+      case "emotion":
+        setSelectedEmotion((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case "category":
+        setSelectedCategory((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+      case "time":
+        setSelectedTime((prev) =>
+          prev.includes(value)
+            ? prev.filter((item) => item !== value)
+            : [...prev, value]
+        );
+        break;
+    }
+  };
+
+  // 페이지 렌더링 시 위치 정보와 날씨 정보 자동 가져오기 (재시도 로직 포함)
+  useEffect(() => {
+    const getLocationAndWeather = async (retryCount = 0) => {
+      const maxRetries = 3; // 최대 3번 재시도
+      const retryDelay = 2000; // 2초 후 재시도
+
+      try {
+        const result = await getLocationWeatherData();
+        console.log("위치 정보와 날씨 정보를 성공적으로 가져왔습니다:", result);
+        console.log("위치:", result.position);
+        console.log("격자 좌표:", result.gridCoordinates);
+        console.log("주소:", result.address);
+        console.log("날씨 정보:", result.weatherData);
+        setWeatherData(result.weatherData);
+        setAddressInfo(result.address);
+      } catch (error) {
+        console.error(
+          `위치 정보나 날씨 정보를 가져올 수 없습니다 (시도 ${retryCount + 1}/${
+            maxRetries + 1
+          }):`,
+          error
+        );
+
+        // 재시도 횟수가 남아있으면 재시도
+        if (retryCount < maxRetries) {
+          console.log(`${retryDelay / 1000}초 후 재시도합니다...`);
+          setTimeout(() => {
+            getLocationAndWeather(retryCount + 1);
+          }, retryDelay);
+        } else {
+          console.error(
+            "최대 재시도 횟수를 초과했습니다. 기상청 API를 확인해주세요."
+          );
+        }
+      }
+    };
+
+    getLocationAndWeather();
+  }, []);
+
+  const [movieTitles, setMovieTitles] = useState<string[]>([]);
+  const [posterInfos, setPosterInfos] = useState<
+    { posterUrl: string; title: string }[]
+  >([
+    { posterUrl: "", title: "" },
+    { posterUrl: "", title: "" },
+    { posterUrl: "", title: "" },
+    { posterUrl: "", title: "" },
+  ]);
+  const [showPosters, setShowPosters] = useState(false); // 포스터 영역 표시 여부
+  const [previousMovieTitles, setPreviousMovieTitles] = useState<string[]>([]); // 이전 추천 영화 목록
+  const [currentLoadingToast, setCurrentLoadingToast] = useState<
+    string | number | null
+  >(null); // 현재 로딩 토스트 ID
+  const [currentStartIndex, setCurrentStartIndex] = useState(0); // 현재 포스터 시작 인덱스
+  const [validationErrors, setValidationErrors] = useState<{
+    weather: boolean;
+    emotion: boolean;
+    category: boolean;
+    time: boolean;
+  }>({
+    weather: false,
+    emotion: false,
+    category: false,
+    time: false,
+  });
+
+  // 무한 루프 슬라이더 핸들러
+  const handlePrev = () => {
+    setCurrentStartIndex((prev) => {
+      if (prev === 0) {
+        // 맨 처음이면 마지막으로 (순환)
+        return posterInfos.length - 1;
+      }
+      return prev - 1;
+    });
+  };
+
+  const handleNext = () => {
+    setCurrentStartIndex((prev) => {
+      if (prev >= posterInfos.length - 1) {
+        // 맨 끝이면 처음으로 (순환)
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
+
+  // 현재 화면에 보이는 포스터 4개 (순환 로직 포함)
+  const getVisiblePosters = () => {
+    const posters = [];
+    for (let i = 0; i < 4; i++) {
+      const index = (currentStartIndex + i) % posterInfos.length;
+      posters.push(posterInfos[index]);
+    }
+    return posters;
+  };
+
+  const visiblePosters = getVisiblePosters();
+
+  // AI 추천 결과에서 영화 제목 4개 추출 후 포스터 검색
+  useEffect(() => {
+    if (!movieTitles || movieTitles.length === 0) return;
+
+    // TMDB API 호출 시작 시 토스트 메시지 업데이트 (지연)
+    if (currentLoadingToast) {
+      setTimeout(() => {
+        toast.update(currentLoadingToast, {
+          render: "화면에 이미지를 표시중이에요!",
+          isLoading: true,
+        });
+      }, 300);
+    }
+
+    const top10 = movieTitles.slice(0, 10); // 최대 10개만 시도
+    (async () => {
+      // 포스터가 있는 영화만 배열에 담기 위한 임시 배열
+      const posters: { posterUrl: string; title: string }[] = [];
+      for (const title of top10) {
+        const response = await fetch(
+          `/api/movies/search?query=${encodeURIComponent(title)}&page=1`
+        );
+        const data = await response.json();
+        // poster_path가 있는 영화만 추출
+        const movie = data.results?.find(
+          (item: {
+            media_type: string;
+            poster_path?: string;
+            title?: string;
+            name?: string;
+          }) => item.media_type === "movie" && item.poster_path
+        );
+        if (movie && movie.poster_path) {
+          posters.push({
+            posterUrl: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+            title: movie.title || movie.name || title,
+          });
+        }
+        // 10개까지 모두 수집 (4개 제한 제거)
+      }
+      setPosterInfos(posters);
+    })();
+  }, [movieTitles, currentLoadingToast]);
+
+  // AI 추천 요청 함수
+  const handleRecommendation = async () => {
+    try {
+      // 유효성 검사
+      const errors = {
+        weather: !selectedWeather,
+        emotion: selectedEmotion.length === 0,
+        category: selectedCategory.length === 0,
+        time: selectedTime.length === 0,
+      };
+
+      setValidationErrors(errors);
+
+      // 하나라도 선택되지 않았으면 추천 중단
+      if (Object.values(errors).some((error) => error)) {
+        toast.error("❌ 모든 카테고리를 선택해주세요.", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      // 유효성 검사 통과 시 spin 상태 변경
+      setSpin(true);
+
+      console.log("AI 추천 요청 시작");
+      console.log("현재 날씨:", weatherData);
+      console.log("선택된 정보:", {
+        weather: selectedWeather,
+        emotion: selectedEmotion,
+        category: selectedCategory,
+        time: selectedTime,
+      });
+
+      // 재추천 시 기존 데이터 초기화
+      setPosterInfos([
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+      ]);
+      setMovieTitles([]);
+      setLoadedCount(0);
+      setShowPosters(false); // 포스터 영역 숨기기
+      setCurrentStartIndex(0); // 포스터 인덱스 초기화
+
+      // 로딩 토스트 표시
+      const loadingToast = toast.loading("요청하신 정보를 종합하고 있어요!", {
+        position: "top-center",
+        autoClose: false,
+        closeButton: false,
+        draggable: false,
+      });
+      setCurrentLoadingToast(loadingToast); // 로딩 토스트 ID 저장
+
+      // 토스트 표시 직후 1초 뒤에 메시지 변경
+      setTimeout(() => {
+        toast.update(loadingToast, {
+          render: "영화 추천 리스트를 뽑고 있어요!",
+          isLoading: true,
+        });
+      }, 2700);
+
+      // AI API 호출
+      const response = await fetch("/api/geminis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "movie-recommendation",
+          weather: weatherData,
+          userSelection: {
+            weather: selectedWeather,
+            emotion: selectedEmotion,
+            category: selectedCategory,
+            time: selectedTime,
+          },
+          previousMovieTitles: previousMovieTitles, // 이전 추천 영화 목록 전달
+          temperature: 0.7,
+          max_tokens: 4096,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI 추천 요청 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("AI 응답:", data);
+
+      if (!data.success || !data.data) {
+        throw new Error(data.error || "AI 추천을 받을 수 없습니다.");
+      }
+
+      console.log("AI 추천 성공:", data.data);
+
+      // AI 추천 성공 시 영화 제목 배열 저장
+      if (Array.isArray(data.data.movieTitles)) {
+        setMovieTitles(data.data.movieTitles);
+        setPreviousMovieTitles(data.data.movieTitles); // 현재 영화 목록을 이전 목록으로 저장
+        setShowPosters(true); // 포스터 영역 표시
+      }
+    } catch (error) {
+      console.error("AI 추천 요청 중 오류:", error);
+      setSpin(false); // 에러 시에는 즉시 spin false
+
+      // 에러 시 기존 로딩 토스트 종료
+      if (currentLoadingToast) {
+        toast.dismiss(currentLoadingToast);
+        setCurrentLoadingToast(null);
+      }
+
+      toast.error("❌ 추천 중 문제가 생겼습니다. 다시 눌러주세요!", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // 포스터 이미지 로딩 완료 개수 상태
+  const [loadedCount, setLoadedCount] = useState(0);
+
+  // posterInfos가 바뀔 때마다 loadedCount 초기화 + 추천 결과가 0개면 spin false
+  useEffect(() => {
+    setLoadedCount(0);
+    if (posterInfos.length === 0) {
+      setSpin(false); // 추천 결과가 없을 때도 spin을 false로
+    }
+  }, [posterInfos]);
+
+  // 모든 포스터 이미지가 렌더링(onLoad)된 경우에만 spin을 false로 변경
+  useEffect(() => {
+    // 현재 화면에 보이는 포스터 4개가 모두 로드되면 spin false
+    const visiblePostersCount = Math.min(4, posterInfos.length);
+    if (posterInfos.length > 0 && loadedCount >= visiblePostersCount) {
+      setSpin(false);
+
+      // 포스터 렌더링 완료 시 스크롤 실행
+      setTimeout(() => {
+        const posterSection = document.getElementById("poster-section");
+        if (posterSection) {
+          posterSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 500); // 포스터 렌더링 완료 후 0.5초 뒤 스크롤
+
+      // 포스터 렌더링 완료 시 기존 토스트를 완료 메시지로 업데이트 (지연)
+      if (currentLoadingToast) {
+        setTimeout(() => {
+          toast.update(currentLoadingToast, {
+            render: "완료되었어요!",
+            type: "success",
+            isLoading: false,
+            autoClose: 2500,
+            closeButton: true,
+            draggable: true,
+          });
+          setCurrentLoadingToast(null); // 토스트 ID 초기화
+        }, 500);
+      }
+    }
+  }, [loadedCount, posterInfos, currentLoadingToast]);
+
+  // 강수량과 습도를 기반으로 날씨 상태를 계산하는 함수
+  const getWeatherStatus = (weatherData: ParsedWeatherInfo | null) => {
+    if (!weatherData) return "--";
+
+    // 강수량 파싱 (예: "5mm" -> 5)
+    const precipitationStr = weatherData.precipitation;
+    const precipitationValue =
+      precipitationStr &&
+      precipitationStr !== "0mm" &&
+      precipitationStr !== "--"
+        ? parseFloat(precipitationStr.replace("mm", ""))
+        : 0;
+
+    // 습도 (이미 숫자로 파싱되어 있음)
+    const humidity = weatherData.humidity || 0;
+
+    // 강수량이 0초과면 "비옴"
+    if (precipitationValue > 0) {
+      return "비";
+    }
+
+    // 습도가 80% 이상이면 "흐림"
+    if (humidity >= 80) {
+      return "흐림";
+    }
+
+    // 그 외의 경우 "맑음"
+    return "맑음";
+  };
+
+  // 날씨 상태에 따른 비디오 파일명 반환 함수
+  const getWeatherVideo = (weatherData: ParsedWeatherInfo | null) => {
+    if (!weatherData) return "/assets/videos/weather_rain.mp4"; // 기본값: 비
+
+    const weatherStatus = getWeatherStatus(weatherData);
+
+    switch (weatherStatus) {
+      case "맑음":
+        return "/assets/videos/weather_sun.mp4";
+      case "흐림":
+        return "/assets/videos/weather_cloud.mp4";
+      case "비":
+        return "/assets/videos/weather_rain.mp4";
+      default:
+        return "/assets/videos/weather_rain.mp4"; // 기본값
+    }
+  };
+
+  // 선택된 날씨 버튼에 따른 비디오 파일명 반환 함수
+  const getSelectedWeatherVideo = () => {
+    if (!selectedWeather) {
+      // 선택된 날씨가 없으면 기상청 데이터 기반
+      return getWeatherVideo(weatherData);
+    }
+
+    // 선택된 날씨 버튼에 따른 비디오
+    switch (selectedWeather) {
+      case "맑음":
+        return "/assets/videos/weather_sun.mp4";
+      case "흐림":
+        return "/assets/videos/weather_cloud.mp4";
+      case "비":
+        return "/assets/videos/weather_rain.mp4";
+      case "눈":
+        return "/assets/videos/weather_snow.mp4";
+      case "천둥":
+        return "/assets/videos/weather_thunder.mp4";
+      default:
+        return "/assets/videos/weather_rain.mp4";
+    }
+  };
+
+  // 날씨 상태에 따른 아이콘 반환 함수
+  const getWeatherIcon = (weatherData: ParsedWeatherInfo | null) => {
+    if (!weatherData) return <WiDaySunny size={60} color="#fff" />;
+
+    const weatherStatus = getWeatherStatus(weatherData);
+
+    if (weatherStatus === "비") {
+      return <TiWeatherDownpour size={60} color="#fff" />;
+    } else if (weatherStatus === "흐림") {
+      return <WiCloudy size={60} color="#fff" />;
+    } else {
+      return <WiDaySunny size={60} color="#fff" />;
+    }
+  };
+
+  // forecastTime을 시간 형식으로 변환하는 함수
+  const formatForecastTime = (forecastTime: string | undefined) => {
+    if (!forecastTime) return "--";
+
+    // "20250718 1500" 형식에서 시간 부분만 추출
+    const timePart = forecastTime.split(" ")[1];
+    if (!timePart || timePart.length < 4) return "--";
+
+    // "1500"을 "15:00" 형식으로 변환
+    const hour = timePart.substring(0, 2);
+    const minute = timePart.substring(2, 4);
+
+    return `${hour}:${minute}`;
+  };
+
+  const weatherButtons = ["맑음", "흐림", "비", "눈", "천둥"];
   const emotionButtons = [
     "기쁨",
     "슬픔",
@@ -39,6 +514,24 @@ const RecommenderPage = () => {
   return (
     // 전체 wrap
     <div className="flex flex-col">
+      {/* ToastContainer 추가 */}
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        toastStyle={{
+          backgroundColor: "#5A736E77",
+          color: "#ffffff",
+        }}
+      />
+
       {/* 취향에 딱 맞춘 영화 */}
       <div className="flex mb-15 justify-center text-white text-5xl">
         취향에 딱 맞춘 영화를 추천해드릴게요
@@ -51,49 +544,78 @@ const RecommenderPage = () => {
         {/* 날씨 + 사용자 정보 감싸는 섹션 */}
         <div className="flex-1 flex-col">
           {/* 날씨 */}
-          <div
-            style={{
-              backgroundImage: "url('/assets/images/weather_rain.png')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-            className="flex h-1/2 rounded-2xl"
-          >
+          <div className="flex h-1/2 rounded-2xl relative overflow-hidden">
+            {/* 비디오 배경 */}
+            <video
+              key={getSelectedWeatherVideo()} // 비디오 변경 시 재렌더링
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ zIndex: 0 }}
+            >
+              <source src={getSelectedWeatherVideo()} type="video/mp4" />
+            </video>
             {/* 날씨 왼쪽 섹션 */}
-            {/* 일단 배경색 넣어놓았으나 배경 이미지 달라진다면 JS이용해서 바꿔야하는데.. */}
             <div
-              style={{ backgroundColor: "#5A736E77" }}
+              style={{ backgroundColor: "#5A736E77", zIndex: 1 }}
               className="flex flex-col m-5 p-10 text-white rounded-xl relative"
             >
-              <TiWeatherDownpour
-                className="absolute left-50 top-15"
-                size={40} // 원하는 크기로 조정
-                color="#fff" // 원하는 색상
-              />
+              <div className="absolute left-60 top-15">
+                {weatherData && getWeatherIcon(weatherData)}
+              </div>
               {/* 날씨 기본 정보 섹션 */}
               <div className="flex-1 mb-5 pt-10">
-                <span className="flex justify-center text-5xl">25°</span>
+                <span className="flex justify-center text-5xl">
+                  {weatherData?.currentTemp
+                    ? `${weatherData.currentTemp}°`
+                    : "--"}
+                </span>
                 <span className="flex justify-center text-1xl mt-2">
-                  서울특별시 구로구
+                  {addressInfo?.city && addressInfo?.district
+                    ? `${addressInfo.city} ${addressInfo.district}`
+                    : "..."}
                 </span>
               </div>
               {/* 날씨 각종 정보 섹션 */}
               <div className="flex ">
                 <div className="flex flex-col justify-center pr-5 border-r-2 border-white-100">
-                  <span>최고온도 30°</span>
-                  <span>최저온도 20°</span>
-                  <span>체감온도 25°</span>
+                  <span>
+                    날ㅤㅤ씨 {weatherData?.weatherDescription || "--"}
+                  </span>
+                  <span>
+                    기준시간 {formatForecastTime(weatherData?.forecastTime)}
+                  </span>
+                  <span>
+                    체감온도{" "}
+                    {weatherData?.feelsLikeTemp
+                      ? `${weatherData.feelsLikeTemp}°`
+                      : "--"}
+                  </span>
                 </div>
                 <div className="flex flex-col pl-5">
-                  <span>습ㅤㅤ도 50%</span>
-                  <span>강ㅤㅤ수 0mm</span>
-                  <span>미세먼지 좋음</span>
+                  <span>
+                    습ㅤㅤ도{" "}
+                    {weatherData?.humidity ? `${weatherData.humidity}%` : "--"}
+                  </span>
+                  <span>
+                    강ㅤㅤ수{" "}
+                    {weatherData?.precipitation
+                      ? `${weatherData.precipitation}`
+                      : "--"}
+                  </span>
+                  <span>
+                    풍ㅤㅤ속{" "}
+                    {weatherData?.windSpeed
+                      ? `${weatherData.windSpeed}m/s`
+                      : "--"}
+                  </span>
                 </div>
               </div>
             </div>
             {/* 날씨 오른쪽 섹션*/}
-            <div className="flex-1 m-5 text-white">
+            <div className="flex-1 m-5 text-white" style={{ zIndex: 1 }}>
               <div className="flex h-1/2 items-center px-5 text-2xl leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
                 <br />
@@ -101,16 +623,28 @@ const RecommenderPage = () => {
               </div>
               {/* 날씨 버튼 컴포넌트 ex)맑음, 흐림 ...*/}
               <div
-                style={{ backgroundColor: "#5A736E77" }}
+                style={{
+                  backgroundColor: "#5A736E77",
+                  border: validationErrors.weather
+                    ? "2px solid #ff4444"
+                    : "none",
+                }}
                 className="flex h-1/2 justify-center items-center px-5 gap-2 rounded-xl"
               >
                 {weatherButtons.map((item, idx) => {
+                  const isSelected = selectedWeather === item;
                   return (
-                    <Button
-                      key={idx}
-                      text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
-                    ></Button>
+                    <div key={idx}>
+                      <button
+                        onClick={() => toggleSelection("weather", item)}
+                        style={{
+                          backgroundColor: isSelected ? "#56EBE155" : "",
+                        }}
+                        className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 border-2 rounded-lg hover:cursor-pointer transition-transform duration-200 hover:-translate-y-1.5`}
+                      >
+                        {item}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -124,6 +658,7 @@ const RecommenderPage = () => {
                 backgroundColor: "#27282D",
                 background:
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
+                border: validationErrors.emotion ? "2px solid #ff4444" : "none",
               }}
               className="flex-1 flex-col my-5 p-5 rounded-xl"
             >
@@ -136,11 +671,15 @@ const RecommenderPage = () => {
 
               <div className="inline-flex flex-wrap w-full justify-between">
                 {emotionButtons.map((item, idx) => {
+                  const isSelected = selectedEmotion.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("emotion", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -151,6 +690,7 @@ const RecommenderPage = () => {
                 backgroundColor: "#27282D",
                 background:
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
+                border: validationErrors.emotion ? "2px solid #ff4444" : "none",
               }}
               className="flex-1 flex-col my-5 mx-8 p-5 rounded-xl"
             >
@@ -161,11 +701,15 @@ const RecommenderPage = () => {
 
               <div className="inline-flex flex-wrap w-full justify-between">
                 {categoryButtons.map((item, idx) => {
+                  const isSelected = selectedCategory.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("category", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -177,6 +721,7 @@ const RecommenderPage = () => {
                 backgroundColor: "#27282D",
                 background:
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
+                border: validationErrors.time ? "2px solid #ff4444" : "none",
               }}
               className="flex-1 flex-col my-5 p-5 rounded-xl"
             >
@@ -187,11 +732,15 @@ const RecommenderPage = () => {
 
               <div className="inline-flex flex-wrap w-full justify-between">
                 {timeButtons.map((item, idx) => {
+                  const isSelected = selectedTime.includes(item);
                   return (
                     <Button
                       key={idx}
                       text={item}
-                      className="flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5"
+                      onClick={() => toggleSelection("time", item)}
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                        isSelected ? "bg-blue-500 text-white" : ""
+                      }`}
                     ></Button>
                   );
                 })}
@@ -204,10 +753,12 @@ const RecommenderPage = () => {
 
         <div className="flex my-10 justify-center items-center">
           <button
-            className={`text-2xl hover:cursor-pointer half-border-spin ${
-              spin ? " spin-active" : ""
-            }`}
-            onClick={() => setSpin(!spin)}
+            className={`text-2xl half-border-spin ${
+              spin ? " spin-active" : "hover:cursor-pointer"
+            } ${spin ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={() => {
+              handleRecommendation();
+            }}
             style={{
               borderColor: "#56EBE1",
               color: "#56EBE1",
@@ -215,6 +766,7 @@ const RecommenderPage = () => {
               border: "none",
               padding: 0,
             }}
+            disabled={spin}
           >
             <span
               style={{
@@ -235,41 +787,150 @@ const RecommenderPage = () => {
         </div>
       </div>
       {/* 영화 정보 나타내는 */}
-      <div className="flex justify-between items-center h-180 mt-30">
-        {/* 왼쪽 포스터 카드 */}
-        <div className="flex w-1/6 h-3/4 justify-center relative group">
-          <PosterCard
-            imageUrl="/assets/images/test_image_01.png"
-            name="1"
-            className="w-full h-full group-hover:scale-110 transition-transform duration-300"
-          />
-          <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+      {showPosters && (
+        <div
+          id="poster-section"
+          className="flex justify-between items-center h-180 mt-30 overflow-hidden relative"
+        >
+          {/* 왼쪽 화살표 - 항상 표시 */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
+            aria-label="이전 포스터"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          {/* 오른쪽 화살표 - 항상 표시 */}
+          <button
+            onClick={handleNext}
+            className="absolute right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
+            aria-label="다음 포스터"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          {/* 왼쪽 포스터 카드 */}
+          <div className="flex w-1/6 h-3/4 justify-center relative group">
+            {/* posterUrl이 있는 경우에만 렌더링 */}
+            {visiblePosters[0] && visiblePosters[0].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={visiblePosters[0].posterUrl}
+                  name={visiblePosters[0].title || "1"}
+                  className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+                />
+                {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={visiblePosters[0].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+          </div>
+          {/* 가운데 포스터 카드 */}
+          <div className="flex w-3/5 h-1/1 mx-20">
+            {/* 가운데 왼쪽 */}
+            {visiblePosters[1] && visiblePosters[1].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={visiblePosters[1].posterUrl}
+                  name={visiblePosters[1].title || "2"}
+                  className="mr-2.5 max-w-full max-h-full object-contain"
+                />
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={visiblePosters[1].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+            {/* 가운데 오른쪽 */}
+            {visiblePosters[2] && visiblePosters[2].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={visiblePosters[2].posterUrl}
+                  name={visiblePosters[2].title || "3"}
+                  className="ml-2.5 max-w-full max-h-full object-contain"
+                />
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={visiblePosters[2].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          {/* 오른쪽 포스터 카드 */}
+          <div className="flex w-1/6 h-3/4 relative group">
+            {visiblePosters[3] && visiblePosters[3].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={visiblePosters[3].posterUrl}
+                  name={visiblePosters[3].title || "4"}
+                  className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                />
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={visiblePosters[3].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+          </div>
         </div>
-        {/* 가운데 포스터 카드 */}
-        <div className="flex w-3/5 h-1/1 mx-20">
-          {/* 가운데 왼쪽 */}
-          <PosterCard
-            imageUrl="/assets/images/test_image_02.png"
-            name="2"
-            className="mr-2.5 max-w-full max-h-full object-contain"
-          />
-          {/* 가운데 오른쪽 */}
-          <PosterCard
-            imageUrl="/assets/images/test_image_03.png"
-            name="3"
-            className="ml-2.5 max-w-full max-h-full object-contain"
-          />
-        </div>
-        {/* 오른쪽 포스터 카드 */}
-        <div className="flex w-1/5 h-3/4 relative group">
-          <PosterCard
-            imageUrl="/assets/images/test_image_04.png"
-            name="4"
-            className="ml-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
-          />
-          <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
