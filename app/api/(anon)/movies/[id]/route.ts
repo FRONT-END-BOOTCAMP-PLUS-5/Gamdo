@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { GetMovieDetailsUseCase } from "@/backend/application/movies/usecases/GetMovieDetailsUseCase";
 
 export async function GET(
-  req: NextRequest,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   const id = Number(params.id);
