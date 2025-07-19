@@ -7,3 +7,4 @@ export { PosterCardSkeleton } from "./SkeletonUI";
 export { default as AuthPageGuard } from "./AuthPageGuard";
 export { default as SubmitButton } from "./SubmitButton";
 export { platformMapping } from "./Platform";
+export { default as Modal } from "./Modal";
