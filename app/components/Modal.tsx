@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useEffect } from "react";
-import MoviePreviewInfo from "./MoviePreviewInfo";
-import MovieReviewList from "./MovieReviewList";
 import { IoMdCloseCircle } from "react-icons/io";
 
 interface ModalProps {
   setModal: () => void;
+  children?: React.ReactNode;
 }
 
-const MovieDetailModal = ({ setModal }: ModalProps) => {
+const Modal = ({ setModal, children }: ModalProps) => {
   const preventOffModal = (event: React.MouseEvent) => {
     event.stopPropagation();
   };
@@ -25,7 +24,7 @@ const MovieDetailModal = ({ setModal }: ModalProps) => {
     <div
       onClick={setModal}
       className="fixed inset-0 z-50 flex justify-center items-center w-full min-h-screen bg-black/90 overflow-y-auto"
-      style={{ alignItems: "flex-start" }} // 모달이 위에서부터 시작하도록
+      style={{ alignItems: "flex-start" }}
     >
       <div
         onClick={preventOffModal}
@@ -39,19 +38,10 @@ const MovieDetailModal = ({ setModal }: ModalProps) => {
         >
           <IoMdCloseCircle size={36} />
         </button>
-        <MoviePreviewInfo
-          info={{
-            releaseDate: "2025.06.22",
-            rating: "12세 이상 관람가",
-            genre: "드라마, 액션",
-            country: "미국",
-            runningTime: "155분",
-          }}
-        />
-        <MovieReviewList />
+        {children}
       </div>
     </div>
   );
 };
 
-export default MovieDetailModal;
+export default Modal;
