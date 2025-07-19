@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import MovieDetailActions from "./MovieHeader";
-import { RiArrowDownSFill, RiArrowUpSFill } from "react-icons/ri";
 
 const labels = ["개봉", "등급", "장르", "국가", "러닝타임"];
 
@@ -14,7 +13,7 @@ const actors = [
   { name: "Damson Idris", image: "/assets/images/test_image_02.png" },
 ];
 const description =
-  "한때 주목받는 유망주였지만 끔찍한 사고로 F1에서 우승하지 못하고 한순간에 추락한 드라이버 소니 헤이스. 그의 오랜 동료인 루벤 세르반테스에게 레이싱 복귀를 제안받으며 최하위 팀인 APXGP에 합류한다. 그러나 팀 내 떠오르는 천재 드라이버 조슈아 피어스와 소니 헤이스의 갈등은 날이 갈수록 심해지고, 설상가상 우승을 향한 APXGP 팀의 전략 또한 번번이 실패하며 최하위권을 벗어나지 못하고 고전하는데...";
+  "한때 주목받는 유망주였지만 뼈아픈 사고로 F1에서 우승하지 못하고 한순간에 추락한 드라이버 소니 헤이스. 그의 오랜 동료인 루벤 세르반테스에게 레이싱 복귀를 제안받으며 최하위 팀인 APXGP에 합류한다. 그러나 팀 내 떠오르는 천재 드라이버 조슈아 피어스와 소니 헤이스의 갈등은 날이 갈수록 심해지고, 설상가상 우승을 향한 APXGP 팀의 전략 또한 번번이 실패하며 최하위권을 벗어나지 못하고 고전하는데...";
 
 type MovieDetailInfoProps = {
   info: {
@@ -54,67 +53,67 @@ const MoviePreviewInfo = ({ info }: MovieDetailInfoProps) => {
         <MovieDetailActions />
       </div>
       <div className="p-6">
-        <div className="text-3xl font-bold text-white mb-6 mt-2">
+        <div className="text-3xl font-bold text-white mb-6 mt-2 text-left">
           F1 더 무비
         </div>
         {/* 스타일 통일용 래퍼 div */}
         <div
-          className="rounded-xl p-12 pb-5"
+          className={`rounded-xl p-12 pb-5 text-left transition-colors duration-150 ${
+            !open ? "cursor-pointer hover:bg-[#303b51]" : ""
+          }`}
           style={{ backgroundColor: "rgb(22, 18, 20)" }}
+          onClick={() => {
+            if (!open) setOpen(true);
+          }}
         >
           {/* 5개 정보 grid */}
-          <div className="grid grid-cols-2 gap-x-2 gap-y-3 text-base text-gray-300">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-3 text-base text-gray-300 text-left">
             {labels.map((label, idx) => (
               <React.Fragment key={label}>
-                <div className="text-sm text-gray-400 font-medium">{label}</div>
-                <div className="text-base text-white font-normal">
+                <div className="text-sm text-gray-400 font-medium text-left">
+                  {label}
+                </div>
+                <div className="text-base text-white font-normal text-left">
                   {Object.values(safeInfo)[idx]}
                 </div>
               </React.Fragment>
             ))}
           </div>
-          {/* ▼ 버튼 */}
-          {!open && (
-            <button
-              className="mx-auto block mt-6 cursor-pointer"
-              onClick={() => setOpen(true)}
-            >
-              <RiArrowDownSFill size={32} />
-            </button>
-          )}
           {/* 상세 정보 */}
           {open && (
-            <div className="mt-8">
+            <div className="mt-8 text-left">
               {/* 소개 */}
               <div className="mb-6">
-                <div className="text-lg font-semibold text-white mb-2">
+                <div className="text-lg font-semibold text-white mb-2 text-left">
                   소개
                 </div>
-                <div className="text-gray-200 text-base leading-relaxed whitespace-pre-line">
+                <div className="text-gray-200 text-base leading-relaxed whitespace-pre-line text-left">
                   {description}
                 </div>
               </div>
               {/* 감독 */}
               <div className="mb-6">
-                <div className="text-lg font-semibold text-white mb-2">
+                <div className="text-lg font-semibold text-white mb-2 text-left">
                   감독
                 </div>
                 <div className="flex items-center gap-4">
-                  <Image
-                    src={director.image}
-                    alt={director.name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <span className="text-base text-white font-medium">
-                    {director.name}
-                  </span>
+                  <div className="flex flex-col items-center">
+                    <Image
+                      src={director.image}
+                      alt={director.name}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                    <span className="text-base text-white font-medium mt-2 text-left">
+                      {director.name}
+                    </span>
+                  </div>
                 </div>
               </div>
               {/* 주연 */}
               <div className="mb-6">
-                <div className="text-lg font-semibold text-white mb-2">
+                <div className="text-lg font-semibold text-white mb-2 text-left">
                   주연
                 </div>
                 <div className="flex items-center gap-4">
@@ -130,7 +129,7 @@ const MoviePreviewInfo = ({ info }: MovieDetailInfoProps) => {
                         height={64}
                         className="w-16 h-16 rounded-full object-cover"
                       />
-                      <span className="text-base text-white font-medium mt-2">
+                      <span className="text-base text-white font-medium mt-2 text-left">
                         {actor.name}
                       </span>
                     </div>
@@ -139,10 +138,10 @@ const MoviePreviewInfo = ({ info }: MovieDetailInfoProps) => {
               </div>
               {/* 접기 버튼 */}
               <button
-                className="flex items-center mt-2 text-gray-400 cursor-pointer hover:text-white mx-auto"
+                className="block mx-auto mt-2 text-xs text-gray-400 hover:text-white cursor-pointer"
                 onClick={() => setOpen(false)}
               >
-                <RiArrowUpSFill size={32} />
+                상세정보 접기
               </button>
             </div>
           )}
