@@ -464,32 +464,32 @@ export class GetMovieWeatherUseCase {
       precipitationType,
       hasRain: weatherMap.get("RN1") !== "0",
       windSpeed: weatherMap.get("WSD"),
+      humidity: weatherMap.get("REH"),
     });
 
-    // 강수가 있는 경우 우선 반환
-    if (precipitationType !== "없음") {
-      return precipitationType;
-    }
-
-    // 강수량 체크
+    // 강수량 체크 (RN1 - 1시간 강수량)
     const rainAmount = weatherMap.get("RN1");
-    if (rainAmount && rainAmount !== "0" && rainAmount !== "강수없음") {
-      return "비";
+    const precipitationValue =
+      rainAmount && rainAmount !== "0" && rainAmount !== "강수없음"
+        ? parseFloat(rainAmount)
+        : 0;
+
+    // 습도 체크 (REH - 습도)
+    const humidityStr = weatherMap.get("REH");
+    const humidity = humidityStr ? parseFloat(humidityStr) : 0;
+
+    // 강수량이 0초과면 "비옴"
+    if (precipitationValue > 0) {
+      return " 비";
     }
 
-    // 하늘 상태가 있으면 사용
-    if (skyCondition !== "정보 없음") {
-      return skyCondition;
+    // 습도가 80% 이상이면 "흐림"
+    if (humidity >= 80) {
+      return " 흐림";
     }
 
-    // 풍속을 기반으로 날씨 상태 추정
-    const windSpeed = parseFloat(weatherMap.get("WSD") || "0");
-    if (windSpeed > 5) {
-      return "바람 많음";
-    }
-
-    // 기본값
-    return "날씨 정보 확인 중";
+    // 그 외의 경우 "맑음"
+    return " 맑음";
   }
 
   /**

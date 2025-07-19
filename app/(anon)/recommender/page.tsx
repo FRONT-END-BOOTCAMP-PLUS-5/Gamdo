@@ -7,7 +7,7 @@ import { MdLocalMovies } from "react-icons/md";
 import { CiTimer } from "react-icons/ci";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { WiDaySunny, WiCloudy, WiSnow, WiFog } from "react-icons/wi";
+import { WiDaySunny, WiCloudy } from "react-icons/wi";
 
 import PosterCard from "@/app/components/PosterCard";
 import Button from "./components/Button";
@@ -35,6 +35,12 @@ const RecommenderPage = () => {
     category: "weather" | "emotion" | "category" | "time",
     value: string
   ) => {
+    // 버튼 클릭 시 해당 카테고리의 에러 상태 초기화
+    setValidationErrors((prev) => ({
+      ...prev,
+      [category]: false,
+    }));
+
     switch (category) {
       case "weather":
         setSelectedWeather((prev) =>
@@ -96,10 +102,37 @@ const RecommenderPage = () => {
     { posterUrl: "", title: "" },
     { posterUrl: "", title: "" },
   ]);
+  const [showPosters, setShowPosters] = useState(false); // 포스터 영역 표시 여부
+  const [previousMovieTitles, setPreviousMovieTitles] = useState<string[]>([]); // 이전 추천 영화 목록
+  const [currentLoadingToast, setCurrentLoadingToast] = useState<
+    string | number | null
+  >(null); // 현재 로딩 토스트 ID
+  const [validationErrors, setValidationErrors] = useState<{
+    weather: boolean;
+    emotion: boolean;
+    category: boolean;
+    time: boolean;
+  }>({
+    weather: false,
+    emotion: false,
+    category: false,
+    time: false,
+  });
 
   // AI 추천 결과에서 영화 제목 4개 추출 후 포스터 검색
   useEffect(() => {
     if (!movieTitles || movieTitles.length === 0) return;
+
+    // TMDB API 호출 시작 시 토스트 메시지 업데이트 (지연)
+    if (currentLoadingToast) {
+      setTimeout(() => {
+        toast.update(currentLoadingToast, {
+          render: "거의 다 됐어요!",
+          isLoading: true,
+        });
+      }, 300);
+    }
+
     const top10 = movieTitles.slice(0, 10); // 최대 10개만 시도
     (async () => {
       // 포스터가 있는 영화만 배열에 담기 위한 임시 배열
@@ -129,11 +162,33 @@ const RecommenderPage = () => {
       }
       setPosterInfos(posters);
     })();
-  }, [movieTitles]);
+  }, [movieTitles, currentLoadingToast]);
 
   // AI 추천 요청 함수
   const handleRecommendation = async () => {
     try {
+      // 유효성 검사
+      const errors = {
+        weather: selectedWeather.length === 0,
+        emotion: selectedEmotion.length === 0,
+        category: selectedCategory.length === 0,
+        time: selectedTime.length === 0,
+      };
+
+      setValidationErrors(errors);
+
+      // 하나라도 선택되지 않았으면 추천 중단
+      if (Object.values(errors).some((error) => error)) {
+        toast.error("❌ 모든 카테고리를 선택해주세요.", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      // 유효성 검사 통과 시 spin 상태 변경
+      setSpin(true);
+
       console.log("AI 추천 요청 시작");
       console.log("현재 날씨:", weatherData);
       console.log("선택된 정보:", {
@@ -143,13 +198,33 @@ const RecommenderPage = () => {
         time: selectedTime,
       });
 
+      // 재추천 시 기존 데이터 초기화
+      setPosterInfos([
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+      ]);
+      setMovieTitles([]);
+      setLoadedCount(0);
+      setShowPosters(false); // 포스터 영역 숨기기
+
       // 로딩 토스트 표시
-      const loadingToast = toast.loading("🎬 영화를 추천하고 있습니다...", {
+      const loadingToast = toast.loading("요청하신 정보를 종합하고 있어요!", {
         position: "top-center",
         autoClose: false,
         closeButton: false,
         draggable: false,
       });
+      setCurrentLoadingToast(loadingToast); // 로딩 토스트 ID 저장
+
+      // 토스트 표시 직후 1초 뒤에 메시지 변경
+      setTimeout(() => {
+        toast.update(loadingToast, {
+          render: "영화 추천 리스트를 뽑고 있어요!",
+          isLoading: true,
+        });
+      }, 2700);
 
       // AI API 호출
       const response = await fetch("/api/geminis", {
@@ -166,6 +241,7 @@ const RecommenderPage = () => {
             category: selectedCategory,
             time: selectedTime,
           },
+          previousMovieTitles: previousMovieTitles, // 이전 추천 영화 목록 전달
           temperature: 0.7,
           max_tokens: 4096,
         }),
@@ -187,16 +263,9 @@ const RecommenderPage = () => {
       // AI 추천 성공 시 영화 제목 배열 저장
       if (Array.isArray(data.data.movieTitles)) {
         setMovieTitles(data.data.movieTitles);
+        setPreviousMovieTitles(data.data.movieTitles); // 현재 영화 목록을 이전 목록으로 저장
+        setShowPosters(true); // 포스터 영역 표시
       }
-      // setSpin(false); // 에러 시에는 즉시 spin false
-      toast.update(loadingToast, {
-        render: "🎬 영화 추천이 완료되었습니다!",
-        type: "success",
-        isLoading: false,
-        autoClose: 2500,
-        closeButton: true,
-        draggable: true,
-      });
     } catch (error) {
       console.error("AI 추천 요청 중 오류:", error);
       setSpin(false); // 에러 시에는 즉시 spin false
@@ -222,36 +291,77 @@ const RecommenderPage = () => {
   useEffect(() => {
     if (posterInfos.length > 0 && loadedCount === posterInfos.length) {
       setSpin(false);
+
+      // 포스터 렌더링 완료 시 스크롤 실행
+      setTimeout(() => {
+        const posterSection = document.getElementById("poster-section");
+        if (posterSection) {
+          posterSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 500); // 포스터 렌더링 완료 후 0.5초 뒤 스크롤
+
+      // 포스터 렌더링 완료 시 기존 토스트를 완료 메시지로 업데이트 (지연)
+      if (currentLoadingToast) {
+        setTimeout(() => {
+          toast.update(currentLoadingToast, {
+            render: "완료되었어요!",
+            type: "success",
+            isLoading: false,
+            autoClose: 2500,
+            closeButton: true,
+            draggable: true,
+          });
+          setCurrentLoadingToast(null); // 토스트 ID 초기화
+        }, 500);
+      }
     }
-  }, [loadedCount, posterInfos]);
+  }, [loadedCount, posterInfos, currentLoadingToast]);
+
+  // 강수량과 습도를 기반으로 날씨 상태를 계산하는 함수
+  const getWeatherStatus = (weatherData: ParsedWeatherInfo | null) => {
+    if (!weatherData) return "--";
+
+    // 강수량 파싱 (예: "5mm" -> 5)
+    const precipitationStr = weatherData.precipitation;
+    const precipitationValue =
+      precipitationStr &&
+      precipitationStr !== "0mm" &&
+      precipitationStr !== "--"
+        ? parseFloat(precipitationStr.replace("mm", ""))
+        : 0;
+
+    // 습도 (이미 숫자로 파싱되어 있음)
+    const humidity = weatherData.humidity || 0;
+
+    // 강수량이 0초과면 "비옴"
+    if (precipitationValue > 0) {
+      return "비";
+    }
+
+    // 습도가 80% 이상이면 "흐림"
+    if (humidity >= 80) {
+      return "흐림";
+    }
+
+    // 그 외의 경우 "맑음"
+    return "맑음";
+  };
 
   // 날씨 상태에 따른 아이콘 반환 함수
   const getWeatherIcon = (weatherData: ParsedWeatherInfo | null) => {
-    if (!weatherData) return <WiDaySunny size={40} color="#fff" />;
+    if (!weatherData) return <WiDaySunny size={60} color="#fff" />;
 
-    const description = weatherData.weatherDescription?.toLowerCase() || "";
-    const skyCondition = weatherData.skyCondition?.toLowerCase() || "";
-    const precipitationType =
-      weatherData.precipitationType?.toLowerCase() || "";
+    const weatherStatus = getWeatherStatus(weatherData);
 
-    if (precipitationType.includes("눈") || description.includes("눈")) {
-      return <WiSnow size={40} color="#fff" />;
-    } else if (
-      precipitationType.includes("비") ||
-      description.includes("비") ||
-      description.includes("rain")
-    ) {
-      return <TiWeatherDownpour size={40} color="#fff" />;
-    } else if (
-      skyCondition.includes("흐림") ||
-      description.includes("흐림") ||
-      description.includes("cloudy")
-    ) {
-      return <WiCloudy size={40} color="#fff" />;
-    } else if (description.includes("안개") || description.includes("fog")) {
-      return <WiFog size={40} color="#fff" />;
+    if (weatherStatus === "비") {
+      return <TiWeatherDownpour size={60} color="#fff" />;
+    } else if (weatherStatus === "흐림") {
+      return <WiCloudy size={60} color="#fff" />;
     } else {
-      return <WiDaySunny size={40} color="#fff" />;
+      return <WiDaySunny size={60} color="#fff" />;
     }
   };
 
@@ -308,6 +418,10 @@ const RecommenderPage = () => {
         draggable
         pauseOnHover
         theme="dark"
+        toastStyle={{
+          backgroundColor: "#5A736E77",
+          color: "#ffffff",
+        }}
       />
 
       {/* 취향에 딱 맞춘 영화 */}
@@ -332,13 +446,12 @@ const RecommenderPage = () => {
             className="flex h-1/2 rounded-2xl"
           >
             {/* 날씨 왼쪽 섹션 */}
-            {/* 일단 배경색 넣어놓았으나 배경 이미지 달라진다면 JS이용해서 바꿔야하는데.. */}
             <div
               style={{ backgroundColor: "#5A736E77" }}
               className="flex flex-col m-5 p-10 text-white rounded-xl relative"
             >
-              <div className="absolute left-50 top-15">
-                {getWeatherIcon(weatherData)}
+              <div className="absolute left-60 top-15">
+                {weatherData && getWeatherIcon(weatherData)}
               </div>
               {/* 날씨 기본 정보 섹션 */}
               <div className="flex-1 mb-5 pt-10">
@@ -356,7 +469,9 @@ const RecommenderPage = () => {
               {/* 날씨 각종 정보 섹션 */}
               <div className="flex ">
                 <div className="flex flex-col justify-center pr-5 border-r-2 border-white-100">
-                  <span>날ㅤㅤ씨{weatherData?.weatherDescription || "--"}</span>
+                  <span>
+                    날ㅤㅤ씨 {weatherData?.weatherDescription || "--"}
+                  </span>
                   <span>
                     기준시간 {formatForecastTime(weatherData?.forecastTime)}
                   </span>
@@ -375,7 +490,7 @@ const RecommenderPage = () => {
                   <span>
                     강ㅤㅤ수{" "}
                     {weatherData?.precipitation
-                      ? `${weatherData.precipitation}mm`
+                      ? `${weatherData.precipitation}`
                       : "--"}
                   </span>
                   <span>
@@ -396,7 +511,12 @@ const RecommenderPage = () => {
               </div>
               {/* 날씨 버튼 컴포넌트 ex)맑음, 흐림 ...*/}
               <div
-                style={{ backgroundColor: "#5A736E77" }}
+                style={{
+                  backgroundColor: "#5A736E77",
+                  border: validationErrors.weather
+                    ? "2px solid #ff4444"
+                    : "none",
+                }}
                 className="flex h-1/2 justify-center items-center px-5 gap-2 rounded-xl"
               >
                 {weatherButtons.map((item, idx) => {
@@ -423,6 +543,7 @@ const RecommenderPage = () => {
                 backgroundColor: "#27282D",
                 background:
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
+                border: validationErrors.emotion ? "2px solid #ff4444" : "none",
               }}
               className="flex-1 flex-col my-5 p-5 rounded-xl"
             >
@@ -454,6 +575,7 @@ const RecommenderPage = () => {
                 backgroundColor: "#27282D",
                 background:
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
+                border: validationErrors.emotion ? "2px solid #ff4444" : "none",
               }}
               className="flex-1 flex-col my-5 mx-8 p-5 rounded-xl"
             >
@@ -484,6 +606,7 @@ const RecommenderPage = () => {
                 backgroundColor: "#27282D",
                 background:
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
+                border: validationErrors.time ? "2px solid #ff4444" : "none",
               }}
               className="flex-1 flex-col my-5 p-5 rounded-xl"
             >
@@ -515,11 +638,10 @@ const RecommenderPage = () => {
 
         <div className="flex my-10 justify-center items-center">
           <button
-            className={`text-2xl hover:cursor-pointer half-border-spin ${
-              spin ? " spin-active" : ""
-            }`}
+            className={`text-2xl half-border-spin ${
+              spin ? " spin-active" : "hover:cursor-pointer"
+            } ${spin ? "opacity-50 cursor-not-allowed" : ""}`}
             onClick={() => {
-              setSpin(!spin);
               handleRecommendation();
             }}
             style={{
@@ -529,6 +651,7 @@ const RecommenderPage = () => {
               border: "none",
               padding: 0,
             }}
+            disabled={spin}
           >
             <span
               style={{
@@ -549,103 +672,108 @@ const RecommenderPage = () => {
         </div>
       </div>
       {/* 영화 정보 나타내는 */}
-      <div className="flex justify-between items-center h-180 mt-30">
-        {/* 왼쪽 포스터 카드 */}
-        <div className="flex w-1/6 h-3/4 justify-center relative group">
-          {/* posterUrl이 있는 경우에만 렌더링 */}
-          {posterInfos[0] && posterInfos[0].posterUrl && (
-            <>
-              <PosterCard
-                imageUrl={posterInfos[0].posterUrl}
-                name={posterInfos[0].title || "1"}
-                className="w-full h-full group-hover:scale-110 transition-transform duration-300"
-              />
-              {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
-              <div style={{ position: "relative", width: 0, height: 0 }}>
-                <Image
-                  src={posterInfos[0].posterUrl}
-                  alt=""
-                  fill
-                  style={{ display: "none" }}
-                  onLoad={() => setLoadedCount((count) => count + 1)}
-                  sizes="(max-width: 768px) 100vw, 308px"
-                  priority
+      {showPosters && (
+        <div
+          id="poster-section"
+          className="flex justify-between items-center h-180 mt-30"
+        >
+          {/* 왼쪽 포스터 카드 */}
+          <div className="flex w-1/6 h-3/4 justify-center relative group">
+            {/* posterUrl이 있는 경우에만 렌더링 */}
+            {posterInfos[0] && posterInfos[0].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={posterInfos[0].posterUrl}
+                  name={posterInfos[0].title || "1"}
+                  className="w-full h-full group-hover:scale-110 transition-transform duration-300"
                 />
-              </div>
-            </>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+                {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={posterInfos[0].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+          </div>
+          {/* 가운데 포스터 카드 */}
+          <div className="flex w-3/5 h-1/1 mx-20">
+            {/* 가운데 왼쪽 */}
+            {posterInfos[1] && posterInfos[1].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={posterInfos[1].posterUrl}
+                  name={posterInfos[1].title || "2"}
+                  className="mr-2.5 max-w-full max-h-full object-contain"
+                />
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={posterInfos[1].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+            {/* 가운데 오른쪽 */}
+            {posterInfos[2] && posterInfos[2].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={posterInfos[2].posterUrl}
+                  name={posterInfos[2].title || "3"}
+                  className="ml-2.5 max-w-full max-h-full object-contain"
+                />
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={posterInfos[2].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          {/* 오른쪽 포스터 카드 */}
+          <div className="flex w-1/5 h-3/4 relative group">
+            {posterInfos[3] && posterInfos[3].posterUrl && (
+              <>
+                <PosterCard
+                  imageUrl={posterInfos[3].posterUrl}
+                  name={posterInfos[3].title || "4"}
+                  className="ml-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                />
+                <div style={{ position: "relative", width: 0, height: 0 }}>
+                  <Image
+                    src={posterInfos[3].posterUrl}
+                    alt=""
+                    fill
+                    style={{ display: "none" }}
+                    onLoad={() => setLoadedCount((count) => count + 1)}
+                    sizes="(max-width: 768px) 100vw, 308px"
+                    priority
+                  />
+                </div>
+              </>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+          </div>
         </div>
-        {/* 가운데 포스터 카드 */}
-        <div className="flex w-3/5 h-1/1 mx-20">
-          {/* 가운데 왼쪽 */}
-          {posterInfos[1] && posterInfos[1].posterUrl && (
-            <>
-              <PosterCard
-                imageUrl={posterInfos[1].posterUrl}
-                name={posterInfos[1].title || "2"}
-                className="mr-2.5 max-w-full max-h-full object-contain"
-              />
-              <div style={{ position: "relative", width: 0, height: 0 }}>
-                <Image
-                  src={posterInfos[1].posterUrl}
-                  alt=""
-                  fill
-                  style={{ display: "none" }}
-                  onLoad={() => setLoadedCount((count) => count + 1)}
-                  sizes="(max-width: 768px) 100vw, 308px"
-                  priority
-                />
-              </div>
-            </>
-          )}
-          {/* 가운데 오른쪽 */}
-          {posterInfos[2] && posterInfos[2].posterUrl && (
-            <>
-              <PosterCard
-                imageUrl={posterInfos[2].posterUrl}
-                name={posterInfos[2].title || "3"}
-                className="ml-2.5 max-w-full max-h-full object-contain"
-              />
-              <div style={{ position: "relative", width: 0, height: 0 }}>
-                <Image
-                  src={posterInfos[2].posterUrl}
-                  alt=""
-                  fill
-                  style={{ display: "none" }}
-                  onLoad={() => setLoadedCount((count) => count + 1)}
-                  sizes="(max-width: 768px) 100vw, 308px"
-                  priority
-                />
-              </div>
-            </>
-          )}
-        </div>
-        {/* 오른쪽 포스터 카드 */}
-        <div className="flex w-1/5 h-3/4 relative group">
-          {posterInfos[3] && posterInfos[3].posterUrl && (
-            <>
-              <PosterCard
-                imageUrl={posterInfos[3].posterUrl}
-                name={posterInfos[3].title || "4"}
-                className="ml-10 max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
-              />
-              <div style={{ position: "relative", width: 0, height: 0 }}>
-                <Image
-                  src={posterInfos[3].posterUrl}
-                  alt=""
-                  fill
-                  style={{ display: "none" }}
-                  onLoad={() => setLoadedCount((count) => count + 1)}
-                  sizes="(max-width: 768px) 100vw, 308px"
-                  priority
-                />
-              </div>
-            </>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
