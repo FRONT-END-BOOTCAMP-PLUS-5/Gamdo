@@ -27,16 +27,14 @@ export const useSavedMovies = (maxLength: number = 6) => {
   const fetchMovieDetails = async (movieIds: string[]) => {
     setIsLoading(true);
     try {
-      const moviesWithPosterData: MovieWithPoster[] = [];
-
-      for (const movieId of movieIds) {
+      const movieDetailsPromises = movieIds.map(async (movieId) => {
         try {
           // 영화 상세 정보 API 호출
           const response = await fetch(`/api/movies/${movieId}`);
           const movieData = await response.json();
 
           if (movieData && movieData.poster_path) {
-            moviesWithPosterData.push({
+            return {
               movieId,
               userId:
                 savedMovies.items.find((item) => item.movieId === movieId)
@@ -46,18 +44,18 @@ export const useSavedMovies = (maxLength: number = 6) => {
                   ?.isRecommended || false,
               posterUrl: `https://image.tmdb.org/t/p/w500${movieData.poster_path}`,
               title: movieData.title || movieId,
-            });
+            } as MovieWithPoster;
           } else {
             // 포스터가 없는 경우 기본 정보만 추가
             const originalMovie = savedMovies.items.find(
               (item) => item.movieId === movieId
             );
             if (originalMovie) {
-              moviesWithPosterData.push({
+              return {
                 ...originalMovie,
                 posterUrl: "/assets/images/no_poster_image.png",
                 title: movieId,
-              });
+              } as MovieWithPoster;
             }
           }
         } catch (error) {
@@ -67,14 +65,23 @@ export const useSavedMovies = (maxLength: number = 6) => {
             (item) => item.movieId === movieId
           );
           if (originalMovie) {
-            moviesWithPosterData.push({
+            return {
               ...originalMovie,
               posterUrl: "/assets/images/no_poster_image.png",
               title: movieId,
-            });
+            } as MovieWithPoster;
           }
         }
-      }
+        return null;
+      });
+
+      // 모든 API 호출을 병렬로 실행
+      const results = await Promise.all(movieDetailsPromises);
+
+      // null 값 필터링
+      const moviesWithPosterData = results.filter(
+        (result): result is MovieWithPoster => result !== null
+      );
 
       setMoviesWithPosters(moviesWithPosterData);
     } catch (error) {
