@@ -10,11 +10,7 @@ export default function MyPage() {
     <div className="flex justify-center w-full max-w-7xl m-auto text-white">
       <div className="w-full flex flex-col gap-10">
         <div className="mb-[32px]">
-          <ProfileCard
-            userName="User Name"
-            email="user@email.com"
-            profileImageUrl="/assets/icons/profile.svg"
-          />
+          <ProfileCard />
         </div>
 
         <div className="flex justify-between">
