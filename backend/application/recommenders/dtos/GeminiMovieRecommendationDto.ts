@@ -38,6 +38,7 @@ export interface GeminiWeatherTestState {
 export interface GeminiMovieRecommendationRequestDto {
   weather: WeatherInfo;
   userSelection: UserSelectionInfo;
+  previousMovieTitles?: string[]; // 이전 추천 영화 목록 (중복 방지용)
   temperature?: number;
   max_tokens?: number;
 }

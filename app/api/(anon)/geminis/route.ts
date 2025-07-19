@@ -14,6 +14,7 @@ interface GeminiRequestBody {
   type?: "movie-recommendation";
   weather?: WeatherInfo;
   userSelection?: { [key: string]: string };
+  previousMovieTitles?: string[]; // 이전 추천 영화 목록
 }
 
 /**
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
       const result = await geminiUseCase.execute({
         weather: body.weather,
         userSelection: body.userSelection,
+        previousMovieTitles: body.previousMovieTitles || [], // 이전 추천 영화 목록
         temperature: body.temperature || 0.7,
         max_tokens: body.max_tokens || 4096,
       });
