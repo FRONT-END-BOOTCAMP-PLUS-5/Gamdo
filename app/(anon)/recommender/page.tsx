@@ -5,12 +5,14 @@ import { WiStars } from "react-icons/wi";
 import { SiCoffeescript } from "react-icons/si";
 import { MdLocalMovies } from "react-icons/md";
 import { CiTimer } from "react-icons/ci";
+import { IoMdCloseCircle } from "react-icons/io";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { WiDaySunny, WiCloudy } from "react-icons/wi";
 
 import PosterCard from "@/app/components/PosterCard";
 import Button from "./components/Button";
+import TrendMovies from "./components/TrendMovies";
 import { useState, useEffect } from "react";
 import Image from "next/image"; // next/image 추가
 import { getLocationWeatherData } from "../../../utils/supabase/recommenders/weather";
@@ -19,6 +21,7 @@ import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [weatherData, setWeatherData] = useState<ParsedWeatherInfo | null>(
     null
   );
@@ -125,6 +128,7 @@ const RecommenderPage = () => {
     string | number | null
   >(null); // 현재 로딩 토스트 ID
   const [currentStartIndex, setCurrentStartIndex] = useState(0); // 현재 포스터 시작 인덱스
+  const [hasScrolled, setHasScrolled] = useState(false); // 스크롤 실행 여부 플래그
   const [validationErrors, setValidationErrors] = useState<{
     weather: boolean;
     emotion: boolean;
@@ -236,7 +240,8 @@ const RecommenderPage = () => {
         return;
       }
 
-      // 유효성 검사 통과 시 spin 상태 변경
+      // 유효성 검사 통과 시 모달 열기 및 spin 상태 변경
+      setShowModal(true);
       setSpin(true);
 
       console.log("AI 추천 요청 시작");
@@ -265,6 +270,7 @@ const RecommenderPage = () => {
       setLoadedCount(0);
       setShowPosters(false); // 포스터 영역 숨기기
       setCurrentStartIndex(0); // 포스터 인덱스 초기화
+      setHasScrolled(false); // 스크롤 플래그 초기화
 
       // 로딩 토스트 표시
       const loadingToast = toast.loading("요청하신 정보를 종합하고 있어요!", {
@@ -355,16 +361,27 @@ const RecommenderPage = () => {
   useEffect(() => {
     // 현재 화면에 보이는 포스터 4개가 모두 로드되면 spin false
     const visiblePostersCount = Math.min(4, posterInfos.length);
-    if (posterInfos.length > 0 && loadedCount >= visiblePostersCount) {
+    if (
+      posterInfos.length > 0 &&
+      loadedCount >= visiblePostersCount &&
+      !hasScrolled
+    ) {
       setSpin(false);
+      setHasScrolled(true); // 스크롤 실행 플래그 설정
 
-      // 포스터 렌더링 완료 시 스크롤 실행
+      // 포스터 렌더링 완료 시 스크롤 실행 (한 번만)
       setTimeout(() => {
         const posterSection = document.getElementById("poster-section");
         if (posterSection) {
-          posterSection.scrollIntoView({
+          const rect = posterSection.getBoundingClientRect();
+          const scrollTop =
+            window.pageYOffset || document.documentElement.scrollTop;
+          const headerHeight = 64; // 헤더 높이
+          const targetPosition = scrollTop + rect.top - headerHeight - 100;
+
+          window.scrollTo({
+            top: targetPosition,
             behavior: "smooth",
-            block: "start",
           });
         }
       }, 500); // 포스터 렌더링 완료 후 0.5초 뒤 스크롤
@@ -384,7 +401,7 @@ const RecommenderPage = () => {
         }, 500);
       }
     }
-  }, [loadedCount, posterInfos, currentLoadingToast]);
+  }, [loadedCount, posterInfos, currentLoadingToast, hasScrolled]);
 
   // 강수량과 습도를 기반으로 날씨 상태를 계산하는 함수
   const getWeatherStatus = (weatherData: ParsedWeatherInfo | null) => {
@@ -786,148 +803,196 @@ const RecommenderPage = () => {
           </button>
         </div>
       </div>
-      {/* 영화 정보 나타내는 */}
+      {/* 추천 영화 섹션 */}
       {showPosters && (
+        <div className="mt-10">
+          <div className="flex border-2 border-white p-4 rounded-lg mb-8">
+            <div className="flex-start text-2xl font-bold text-white">
+              추천 영화
+            </div>
+          </div>
+
+          <div
+            id="poster-section"
+            className="flex justify-between items-center h-180 overflow-hidden relative"
+          >
+            {/* 왼쪽 화살표 - 항상 표시 */}
+            <button
+              onClick={handlePrev}
+              className="absolute left-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
+              aria-label="이전 포스터"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            {/* 오른쪽 화살표 - 항상 표시 */}
+            <button
+              onClick={handleNext}
+              className="absolute right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
+              aria-label="다음 포스터"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+
+            {/* 왼쪽 포스터 카드 */}
+            <div className="flex w-1/6 h-3/4 justify-center relative group">
+              {/* posterUrl이 있는 경우에만 렌더링 */}
+              {visiblePosters[0] && visiblePosters[0].posterUrl && (
+                <>
+                  <PosterCard
+                    imageUrl={visiblePosters[0].posterUrl}
+                    name={visiblePosters[0].title || "1"}
+                    className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+                  />
+                  {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
+                  <div style={{ position: "relative", width: 0, height: 0 }}>
+                    <Image
+                      src={visiblePosters[0].posterUrl}
+                      alt=""
+                      fill
+                      style={{ display: "none" }}
+                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      sizes="(max-width: 768px) 100vw, 308px"
+                      priority
+                    />
+                  </div>
+                </>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+            </div>
+            {/* 가운데 포스터 카드 */}
+            <div className="flex w-3/5 h-1/1 mx-20">
+              {/* 가운데 왼쪽 */}
+              {visiblePosters[1] && visiblePosters[1].posterUrl && (
+                <>
+                  <PosterCard
+                    imageUrl={visiblePosters[1].posterUrl}
+                    name={visiblePosters[1].title || "2"}
+                    className="mr-2.5 max-w-full max-h-full object-contain"
+                  />
+                  <div style={{ position: "relative", width: 0, height: 0 }}>
+                    <Image
+                      src={visiblePosters[1].posterUrl}
+                      alt=""
+                      fill
+                      style={{ display: "none" }}
+                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      sizes="(max-width: 768px) 100vw, 308px"
+                      priority
+                    />
+                  </div>
+                </>
+              )}
+              {/* 가운데 오른쪽 */}
+              {visiblePosters[2] && visiblePosters[2].posterUrl && (
+                <>
+                  <PosterCard
+                    imageUrl={visiblePosters[2].posterUrl}
+                    name={visiblePosters[2].title || "3"}
+                    className="ml-2.5 max-w-full max-h-full object-contain"
+                  />
+                  <div style={{ position: "relative", width: 0, height: 0 }}>
+                    <Image
+                      src={visiblePosters[2].posterUrl}
+                      alt=""
+                      fill
+                      style={{ display: "none" }}
+                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      sizes="(max-width: 768px) 100vw, 308px"
+                      priority
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            {/* 오른쪽 포스터 카드 */}
+            <div className="flex w-1/6 h-3/4 relative group">
+              {visiblePosters[3] && visiblePosters[3].posterUrl && (
+                <>
+                  <PosterCard
+                    imageUrl={visiblePosters[3].posterUrl}
+                    name={visiblePosters[3].title || "4"}
+                    className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                  />
+                  <div style={{ position: "relative", width: 0, height: 0 }}>
+                    <Image
+                      src={visiblePosters[3].posterUrl}
+                      alt=""
+                      fill
+                      style={{ display: "none" }}
+                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      sizes="(max-width: 768px) 100vw, 308px"
+                      priority
+                    />
+                  </div>
+                </>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 최신 영화 섹션 */}
+      <TrendMovies />
+
+      {/* 추천 로딩 모달 */}
+      {showModal && (
         <div
-          id="poster-section"
-          className="flex justify-between items-center h-180 mt-30 overflow-hidden relative"
+          className="fixed inset-0 z-50 flex justify-center items-center w-full min-h-screen bg-black/90 overflow-y-auto"
+          style={{ alignItems: "flex-start", marginTop: "50px" }}
         >
-          {/* 왼쪽 화살표 - 항상 표시 */}
-          <button
-            onClick={handlePrev}
-            className="absolute left-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
-            aria-label="이전 포스터"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="bg-[#23272f] w-[75%] h-[70vh] max-w-[98vw] rounded-2xl shadow-2xl flex flex-col text-white my-12 relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 z-10 text-red-500 cursor-pointer hover:text-red-400 transition"
+              aria-label="Close"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
+              <IoMdCloseCircle size={36} />
+            </button>
 
-          {/* 오른쪽 화살표 - 항상 표시 */}
-          <button
-            onClick={handleNext}
-            className="absolute right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
-            aria-label="다음 포스터"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-
-          {/* 왼쪽 포스터 카드 */}
-          <div className="flex w-1/6 h-3/4 justify-center relative group">
-            {/* posterUrl이 있는 경우에만 렌더링 */}
-            {visiblePosters[0] && visiblePosters[0].posterUrl && (
-              <>
-                <PosterCard
-                  imageUrl={visiblePosters[0].posterUrl}
-                  name={visiblePosters[0].title || "1"}
-                  className="w-full h-full group-hover:scale-110 transition-transform duration-300"
-                />
-                {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
-                <div style={{ position: "relative", width: 0, height: 0 }}>
-                  <Image
-                    src={visiblePosters[0].posterUrl}
-                    alt=""
-                    fill
-                    style={{ display: "none" }}
-                    onLoad={() => setLoadedCount((count) => count + 1)}
-                    sizes="(max-width: 768px) 100vw, 308px"
-                    priority
-                  />
-                </div>
-              </>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
-          </div>
-          {/* 가운데 포스터 카드 */}
-          <div className="flex w-3/5 h-1/1 mx-20">
-            {/* 가운데 왼쪽 */}
-            {visiblePosters[1] && visiblePosters[1].posterUrl && (
-              <>
-                <PosterCard
-                  imageUrl={visiblePosters[1].posterUrl}
-                  name={visiblePosters[1].title || "2"}
-                  className="mr-2.5 max-w-full max-h-full object-contain"
-                />
-                <div style={{ position: "relative", width: 0, height: 0 }}>
-                  <Image
-                    src={visiblePosters[1].posterUrl}
-                    alt=""
-                    fill
-                    style={{ display: "none" }}
-                    onLoad={() => setLoadedCount((count) => count + 1)}
-                    sizes="(max-width: 768px) 100vw, 308px"
-                    priority
-                  />
-                </div>
-              </>
-            )}
-            {/* 가운데 오른쪽 */}
-            {visiblePosters[2] && visiblePosters[2].posterUrl && (
-              <>
-                <PosterCard
-                  imageUrl={visiblePosters[2].posterUrl}
-                  name={visiblePosters[2].title || "3"}
-                  className="ml-2.5 max-w-full max-h-full object-contain"
-                />
-                <div style={{ position: "relative", width: 0, height: 0 }}>
-                  <Image
-                    src={visiblePosters[2].posterUrl}
-                    alt=""
-                    fill
-                    style={{ display: "none" }}
-                    onLoad={() => setLoadedCount((count) => count + 1)}
-                    sizes="(max-width: 768px) 100vw, 308px"
-                    priority
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          {/* 오른쪽 포스터 카드 */}
-          <div className="flex w-1/6 h-3/4 relative group">
-            {visiblePosters[3] && visiblePosters[3].posterUrl && (
-              <>
-                <PosterCard
-                  imageUrl={visiblePosters[3].posterUrl}
-                  name={visiblePosters[3].title || "4"}
-                  className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
-                />
-                <div style={{ position: "relative", width: 0, height: 0 }}>
-                  <Image
-                    src={visiblePosters[3].posterUrl}
-                    alt=""
-                    fill
-                    style={{ display: "none" }}
-                    onLoad={() => setLoadedCount((count) => count + 1)}
-                    sizes="(max-width: 768px) 100vw, 308px"
-                    priority
-                  />
-                </div>
-              </>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-l from-black/100 via-transparent to-transparent pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
+            {/* 유튜브 영화 예고편 섹션 */}
+            <div className="flex-1 p-6">
+              <h3 className="text-xl font-bold mb-5 text-white text-center">
+                금주의 추천 영화
+              </h3>
+              <div className="w-full h-full pb-10 flex justify-center items-center">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1"
+                  title="영화 예고편"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="rounded-lg"
+                ></iframe>
+              </div>
+            </div>
           </div>
         </div>
       )}
