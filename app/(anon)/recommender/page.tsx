@@ -5,6 +5,7 @@ import { WiStars } from "react-icons/wi";
 import { SiCoffeescript } from "react-icons/si";
 import { MdLocalMovies } from "react-icons/md";
 import { CiTimer } from "react-icons/ci";
+import { IoMdCloseCircle } from "react-icons/io";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { WiDaySunny, WiCloudy } from "react-icons/wi";
@@ -20,6 +21,7 @@ import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [weatherData, setWeatherData] = useState<ParsedWeatherInfo | null>(
     null
   );
@@ -126,6 +128,7 @@ const RecommenderPage = () => {
     string | number | null
   >(null); // 현재 로딩 토스트 ID
   const [currentStartIndex, setCurrentStartIndex] = useState(0); // 현재 포스터 시작 인덱스
+  const [hasScrolled, setHasScrolled] = useState(false); // 스크롤 실행 여부 플래그
   const [validationErrors, setValidationErrors] = useState<{
     weather: boolean;
     emotion: boolean;
@@ -237,7 +240,8 @@ const RecommenderPage = () => {
         return;
       }
 
-      // 유효성 검사 통과 시 spin 상태 변경
+      // 유효성 검사 통과 시 모달 열기 및 spin 상태 변경
+      setShowModal(true);
       setSpin(true);
 
       console.log("AI 추천 요청 시작");
@@ -266,6 +270,7 @@ const RecommenderPage = () => {
       setLoadedCount(0);
       setShowPosters(false); // 포스터 영역 숨기기
       setCurrentStartIndex(0); // 포스터 인덱스 초기화
+      setHasScrolled(false); // 스크롤 플래그 초기화
 
       // 로딩 토스트 표시
       const loadingToast = toast.loading("요청하신 정보를 종합하고 있어요!", {
@@ -356,16 +361,27 @@ const RecommenderPage = () => {
   useEffect(() => {
     // 현재 화면에 보이는 포스터 4개가 모두 로드되면 spin false
     const visiblePostersCount = Math.min(4, posterInfos.length);
-    if (posterInfos.length > 0 && loadedCount >= visiblePostersCount) {
+    if (
+      posterInfos.length > 0 &&
+      loadedCount >= visiblePostersCount &&
+      !hasScrolled
+    ) {
       setSpin(false);
+      setHasScrolled(true); // 스크롤 실행 플래그 설정
 
-      // 포스터 렌더링 완료 시 스크롤 실행
+      // 포스터 렌더링 완료 시 스크롤 실행 (한 번만)
       setTimeout(() => {
         const posterSection = document.getElementById("poster-section");
         if (posterSection) {
-          posterSection.scrollIntoView({
+          const rect = posterSection.getBoundingClientRect();
+          const scrollTop =
+            window.pageYOffset || document.documentElement.scrollTop;
+          const headerHeight = 64; // 헤더 높이
+          const targetPosition = scrollTop + rect.top - headerHeight - 100;
+
+          window.scrollTo({
+            top: targetPosition,
             behavior: "smooth",
-            block: "start",
           });
         }
       }, 500); // 포스터 렌더링 완료 후 0.5초 뒤 스크롤
@@ -385,7 +401,7 @@ const RecommenderPage = () => {
         }, 500);
       }
     }
-  }, [loadedCount, posterInfos, currentLoadingToast]);
+  }, [loadedCount, posterInfos, currentLoadingToast, hasScrolled]);
 
   // 강수량과 습도를 기반으로 날씨 상태를 계산하는 함수
   const getWeatherStatus = (weatherData: ParsedWeatherInfo | null) => {
@@ -943,6 +959,43 @@ const RecommenderPage = () => {
 
       {/* 최신 영화 섹션 */}
       <TrendMovies />
+
+      {/* 추천 로딩 모달 */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex justify-center items-center w-full min-h-screen bg-black/90 overflow-y-auto"
+          style={{ alignItems: "flex-start", marginTop: "50px" }}
+        >
+          <div className="bg-[#23272f] w-[75%] h-[70vh] max-w-[98vw] rounded-2xl shadow-2xl flex flex-col text-white my-12 relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 z-10 text-red-500 cursor-pointer hover:text-red-400 transition"
+              aria-label="Close"
+            >
+              <IoMdCloseCircle size={36} />
+            </button>
+
+            {/* 유튜브 영화 예고편 섹션 */}
+            <div className="flex-1 p-6">
+              <h3 className="text-xl font-bold mb-5 text-white text-center">
+                금주의 추천 영화
+              </h3>
+              <div className="w-full h-full pb-10 flex justify-center items-center">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1"
+                  title="영화 예고편"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="rounded-lg"
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
