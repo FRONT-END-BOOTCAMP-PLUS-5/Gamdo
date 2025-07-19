@@ -107,6 +107,7 @@ const RecommenderPage = () => {
   const [currentLoadingToast, setCurrentLoadingToast] = useState<
     string | number | null
   >(null); // 현재 로딩 토스트 ID
+  const [currentStartIndex, setCurrentStartIndex] = useState(0); // 현재 포스터 시작 인덱스
   const [validationErrors, setValidationErrors] = useState<{
     weather: boolean;
     emotion: boolean;
@@ -118,6 +119,33 @@ const RecommenderPage = () => {
     category: false,
     time: false,
   });
+
+  // 무한 루프 슬라이더 핸들러
+  const handlePrev = () => {
+    setCurrentStartIndex((prev) => {
+      if (prev === 0) {
+        // 맨 처음이면 마지막으로
+        return Math.max(0, posterInfos.length - 4);
+      }
+      return prev - 1;
+    });
+  };
+
+  const handleNext = () => {
+    setCurrentStartIndex((prev) => {
+      if (prev >= posterInfos.length - 4) {
+        // 맨 끝이면 처음으로
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
+
+  // 현재 화면에 보이는 포스터 4개
+  const visiblePosters = posterInfos.slice(
+    currentStartIndex,
+    currentStartIndex + 4
+  );
 
   // AI 추천 결과에서 영화 제목 4개 추출 후 포스터 검색
   useEffect(() => {
@@ -157,8 +185,7 @@ const RecommenderPage = () => {
             title: movie.title || movie.name || title,
           });
         }
-        // 4개만 모이면 중단
-        if (posters.length >= 4) break;
+        // 10개까지 모두 수집 (4개 제한 제거)
       }
       setPosterInfos(posters);
     })();
@@ -204,10 +231,17 @@ const RecommenderPage = () => {
         { posterUrl: "", title: "" },
         { posterUrl: "", title: "" },
         { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
+        { posterUrl: "", title: "" },
       ]);
       setMovieTitles([]);
       setLoadedCount(0);
       setShowPosters(false); // 포스터 영역 숨기기
+      setCurrentStartIndex(0); // 포스터 인덱스 초기화
 
       // 로딩 토스트 표시
       const loadingToast = toast.loading("요청하신 정보를 종합하고 있어요!", {
@@ -675,22 +709,64 @@ const RecommenderPage = () => {
       {showPosters && (
         <div
           id="poster-section"
-          className="flex justify-between items-center h-180 mt-30 overflow-hidden"
+          className="flex justify-between items-center h-180 mt-30 overflow-hidden relative"
         >
+          {/* 왼쪽 화살표 - 항상 표시 */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
+            aria-label="이전 포스터"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          {/* 오른쪽 화살표 - 항상 표시 */}
+          <button
+            onClick={handleNext}
+            className="absolute right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300"
+            aria-label="다음 포스터"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
           {/* 왼쪽 포스터 카드 */}
           <div className="flex w-1/6 h-3/4 justify-center relative group">
             {/* posterUrl이 있는 경우에만 렌더링 */}
-            {posterInfos[0] && posterInfos[0].posterUrl && (
+            {visiblePosters[0] && visiblePosters[0].posterUrl && (
               <>
                 <PosterCard
-                  imageUrl={posterInfos[0].posterUrl}
-                  name={posterInfos[0].title || "1"}
+                  imageUrl={visiblePosters[0].posterUrl}
+                  name={visiblePosters[0].title || "1"}
                   className="w-full h-full group-hover:scale-110 transition-transform duration-300"
                 />
                 {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
                 <div style={{ position: "relative", width: 0, height: 0 }}>
                   <Image
-                    src={posterInfos[0].posterUrl}
+                    src={visiblePosters[0].posterUrl}
                     alt=""
                     fill
                     style={{ display: "none" }}
@@ -706,16 +782,16 @@ const RecommenderPage = () => {
           {/* 가운데 포스터 카드 */}
           <div className="flex w-3/5 h-1/1 mx-20">
             {/* 가운데 왼쪽 */}
-            {posterInfos[1] && posterInfos[1].posterUrl && (
+            {visiblePosters[1] && visiblePosters[1].posterUrl && (
               <>
                 <PosterCard
-                  imageUrl={posterInfos[1].posterUrl}
-                  name={posterInfos[1].title || "2"}
+                  imageUrl={visiblePosters[1].posterUrl}
+                  name={visiblePosters[1].title || "2"}
                   className="mr-2.5 max-w-full max-h-full object-contain"
                 />
                 <div style={{ position: "relative", width: 0, height: 0 }}>
                   <Image
-                    src={posterInfos[1].posterUrl}
+                    src={visiblePosters[1].posterUrl}
                     alt=""
                     fill
                     style={{ display: "none" }}
@@ -727,16 +803,16 @@ const RecommenderPage = () => {
               </>
             )}
             {/* 가운데 오른쪽 */}
-            {posterInfos[2] && posterInfos[2].posterUrl && (
+            {visiblePosters[2] && visiblePosters[2].posterUrl && (
               <>
                 <PosterCard
-                  imageUrl={posterInfos[2].posterUrl}
-                  name={posterInfos[2].title || "3"}
+                  imageUrl={visiblePosters[2].posterUrl}
+                  name={visiblePosters[2].title || "3"}
                   className="ml-2.5 max-w-full max-h-full object-contain"
                 />
                 <div style={{ position: "relative", width: 0, height: 0 }}>
                   <Image
-                    src={posterInfos[2].posterUrl}
+                    src={visiblePosters[2].posterUrl}
                     alt=""
                     fill
                     style={{ display: "none" }}
@@ -750,16 +826,16 @@ const RecommenderPage = () => {
           </div>
           {/* 오른쪽 포스터 카드 */}
           <div className="flex w-1/6 h-3/4 relative group">
-            {posterInfos[3] && posterInfos[3].posterUrl && (
+            {visiblePosters[3] && visiblePosters[3].posterUrl && (
               <>
                 <PosterCard
-                  imageUrl={posterInfos[3].posterUrl}
-                  name={posterInfos[3].title || "4"}
-                  className=" max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                  imageUrl={visiblePosters[3].posterUrl}
+                  name={visiblePosters[3].title || "4"}
+                  className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
                 />
                 <div style={{ position: "relative", width: 0, height: 0 }}>
                   <Image
-                    src={posterInfos[3].posterUrl}
+                    src={visiblePosters[3].posterUrl}
                     alt=""
                     fill
                     style={{ display: "none" }}
