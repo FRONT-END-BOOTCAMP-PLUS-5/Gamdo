@@ -25,7 +25,7 @@ const RecommenderPage = () => {
   const [addressInfo, setAddressInfo] = useState<AddressInfo | null>(null);
 
   // 선택된 버튼들을 관리하는 state
-  const [selectedWeather, setSelectedWeather] = useState<string[]>([]);
+  const [selectedWeather, setSelectedWeather] = useState<string>(""); // 날씨는 단일 선택
   const [selectedEmotion, setSelectedEmotion] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string[]>([]);
@@ -43,11 +43,8 @@ const RecommenderPage = () => {
 
     switch (category) {
       case "weather":
-        setSelectedWeather((prev) =>
-          prev.includes(value)
-            ? prev.filter((item) => item !== value)
-            : [...prev, value]
-        );
+        // 날씨는 하나만 선택 가능 (라디오 버튼 방식)
+        setSelectedWeather((prev) => (prev === value ? "" : value));
         break;
       case "emotion":
         setSelectedEmotion((prev) =>
@@ -73,9 +70,12 @@ const RecommenderPage = () => {
     }
   };
 
-  // 페이지 렌더링 시 위치 정보와 날씨 정보 자동 가져오기
+  // 페이지 렌더링 시 위치 정보와 날씨 정보 자동 가져오기 (재시도 로직 포함)
   useEffect(() => {
-    const getLocationAndWeather = async () => {
+    const getLocationAndWeather = async (retryCount = 0) => {
+      const maxRetries = 3; // 최대 3번 재시도
+      const retryDelay = 2000; // 2초 후 재시도
+
       try {
         const result = await getLocationWeatherData();
         console.log("위치 정보와 날씨 정보를 성공적으로 가져왔습니다:", result);
@@ -86,7 +86,24 @@ const RecommenderPage = () => {
         setWeatherData(result.weatherData);
         setAddressInfo(result.address);
       } catch (error) {
-        console.error("위치 정보나 날씨 정보를 가져올 수 없습니다:", error);
+        console.error(
+          `위치 정보나 날씨 정보를 가져올 수 없습니다 (시도 ${retryCount + 1}/${
+            maxRetries + 1
+          }):`,
+          error
+        );
+
+        // 재시도 횟수가 남아있으면 재시도
+        if (retryCount < maxRetries) {
+          console.log(`${retryDelay / 1000}초 후 재시도합니다...`);
+          setTimeout(() => {
+            getLocationAndWeather(retryCount + 1);
+          }, retryDelay);
+        } else {
+          console.error(
+            "최대 재시도 횟수를 초과했습니다. 기상청 API를 확인해주세요."
+          );
+        }
       }
     };
 
@@ -124,8 +141,8 @@ const RecommenderPage = () => {
   const handlePrev = () => {
     setCurrentStartIndex((prev) => {
       if (prev === 0) {
-        // 맨 처음이면 마지막으로
-        return Math.max(0, posterInfos.length - 4);
+        // 맨 처음이면 마지막으로 (순환)
+        return posterInfos.length - 1;
       }
       return prev - 1;
     });
@@ -133,19 +150,25 @@ const RecommenderPage = () => {
 
   const handleNext = () => {
     setCurrentStartIndex((prev) => {
-      if (prev >= posterInfos.length - 4) {
-        // 맨 끝이면 처음으로
+      if (prev >= posterInfos.length - 1) {
+        // 맨 끝이면 처음으로 (순환)
         return 0;
       }
       return prev + 1;
     });
   };
 
-  // 현재 화면에 보이는 포스터 4개
-  const visiblePosters = posterInfos.slice(
-    currentStartIndex,
-    currentStartIndex + 4
-  );
+  // 현재 화면에 보이는 포스터 4개 (순환 로직 포함)
+  const getVisiblePosters = () => {
+    const posters = [];
+    for (let i = 0; i < 4; i++) {
+      const index = (currentStartIndex + i) % posterInfos.length;
+      posters.push(posterInfos[index]);
+    }
+    return posters;
+  };
+
+  const visiblePosters = getVisiblePosters();
 
   // AI 추천 결과에서 영화 제목 4개 추출 후 포스터 검색
   useEffect(() => {
@@ -155,7 +178,7 @@ const RecommenderPage = () => {
     if (currentLoadingToast) {
       setTimeout(() => {
         toast.update(currentLoadingToast, {
-          render: "거의 다 됐어요!",
+          render: "화면에 이미지를 표시중이에요!",
           isLoading: true,
         });
       }, 300);
@@ -196,7 +219,7 @@ const RecommenderPage = () => {
     try {
       // 유효성 검사
       const errors = {
-        weather: selectedWeather.length === 0,
+        weather: !selectedWeather,
         emotion: selectedEmotion.length === 0,
         category: selectedCategory.length === 0,
         time: selectedTime.length === 0,
@@ -303,7 +326,14 @@ const RecommenderPage = () => {
     } catch (error) {
       console.error("AI 추천 요청 중 오류:", error);
       setSpin(false); // 에러 시에는 즉시 spin false
-      toast.error("❌ 영화 추천에 실패했습니다. 다시 시도해주세요.", {
+
+      // 에러 시 기존 로딩 토스트 종료
+      if (currentLoadingToast) {
+        toast.dismiss(currentLoadingToast);
+        setCurrentLoadingToast(null);
+      }
+
+      toast.error("❌ 추천 중 문제가 생겼습니다. 다시 눌러주세요!", {
         position: "top-center",
         autoClose: 3000,
       });
@@ -323,7 +353,9 @@ const RecommenderPage = () => {
 
   // 모든 포스터 이미지가 렌더링(onLoad)된 경우에만 spin을 false로 변경
   useEffect(() => {
-    if (posterInfos.length > 0 && loadedCount === posterInfos.length) {
+    // 현재 화면에 보이는 포스터 4개가 모두 로드되면 spin false
+    const visiblePostersCount = Math.min(4, posterInfos.length);
+    if (posterInfos.length > 0 && loadedCount >= visiblePostersCount) {
       setSpin(false);
 
       // 포스터 렌더링 완료 시 스크롤 실행
@@ -384,6 +416,48 @@ const RecommenderPage = () => {
     return "맑음";
   };
 
+  // 날씨 상태에 따른 비디오 파일명 반환 함수
+  const getWeatherVideo = (weatherData: ParsedWeatherInfo | null) => {
+    if (!weatherData) return "/assets/videos/weather_rain.mp4"; // 기본값: 비
+
+    const weatherStatus = getWeatherStatus(weatherData);
+
+    switch (weatherStatus) {
+      case "맑음":
+        return "/assets/videos/weather_sun.mp4";
+      case "흐림":
+        return "/assets/videos/weather_cloud.mp4";
+      case "비":
+        return "/assets/videos/weather_rain.mp4";
+      default:
+        return "/assets/videos/weather_rain.mp4"; // 기본값
+    }
+  };
+
+  // 선택된 날씨 버튼에 따른 비디오 파일명 반환 함수
+  const getSelectedWeatherVideo = () => {
+    if (!selectedWeather) {
+      // 선택된 날씨가 없으면 기상청 데이터 기반
+      return getWeatherVideo(weatherData);
+    }
+
+    // 선택된 날씨 버튼에 따른 비디오
+    switch (selectedWeather) {
+      case "맑음":
+        return "/assets/videos/weather_sun.mp4";
+      case "흐림":
+        return "/assets/videos/weather_cloud.mp4";
+      case "비":
+        return "/assets/videos/weather_rain.mp4";
+      case "눈":
+        return "/assets/videos/weather_snow.mp4";
+      case "천둥":
+        return "/assets/videos/weather_thunder.mp4";
+      default:
+        return "/assets/videos/weather_rain.mp4";
+    }
+  };
+
   // 날씨 상태에 따른 아이콘 반환 함수
   const getWeatherIcon = (weatherData: ParsedWeatherInfo | null) => {
     if (!weatherData) return <WiDaySunny size={60} color="#fff" />;
@@ -414,7 +488,7 @@ const RecommenderPage = () => {
     return `${hour}:${minute}`;
   };
 
-  const weatherButtons = ["맑음", "흐림", "비", "눈", "우박", "안개"];
+  const weatherButtons = ["맑음", "흐림", "비", "눈", "천둥"];
   const emotionButtons = [
     "기쁨",
     "슬픔",
@@ -470,18 +544,22 @@ const RecommenderPage = () => {
         {/* 날씨 + 사용자 정보 감싸는 섹션 */}
         <div className="flex-1 flex-col">
           {/* 날씨 */}
-          <div
-            style={{
-              backgroundImage: "url('/assets/images/weather_rain.png')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-            className="flex h-1/2 rounded-2xl"
-          >
+          <div className="flex h-1/2 rounded-2xl relative overflow-hidden">
+            {/* 비디오 배경 */}
+            <video
+              key={getSelectedWeatherVideo()} // 비디오 변경 시 재렌더링
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ zIndex: 0 }}
+            >
+              <source src={getSelectedWeatherVideo()} type="video/mp4" />
+            </video>
             {/* 날씨 왼쪽 섹션 */}
             <div
-              style={{ backgroundColor: "#5A736E77" }}
+              style={{ backgroundColor: "#5A736E77", zIndex: 1 }}
               className="flex flex-col m-5 p-10 text-white rounded-xl relative"
             >
               <div className="absolute left-60 top-15">
@@ -537,7 +615,7 @@ const RecommenderPage = () => {
               </div>
             </div>
             {/* 날씨 오른쪽 섹션*/}
-            <div className="flex-1 m-5 text-white">
+            <div className="flex-1 m-5 text-white" style={{ zIndex: 1 }}>
               <div className="flex h-1/2 items-center px-5 text-2xl leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
                 <br />
@@ -554,16 +632,19 @@ const RecommenderPage = () => {
                 className="flex h-1/2 justify-center items-center px-5 gap-2 rounded-xl"
               >
                 {weatherButtons.map((item, idx) => {
-                  const isSelected = selectedWeather.includes(item);
+                  const isSelected = selectedWeather === item;
                   return (
-                    <Button
-                      key={idx}
-                      text={item}
-                      onClick={() => toggleSelection("weather", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
-                        isSelected ? "bg-blue-500 text-white" : ""
-                      }`}
-                    ></Button>
+                    <div key={idx}>
+                      <button
+                        onClick={() => toggleSelection("weather", item)}
+                        style={{
+                          backgroundColor: isSelected ? "#56EBE155" : "",
+                        }}
+                        className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 border-2 rounded-lg hover:cursor-pointer transition-transform duration-200 hover:-translate-y-1.5`}
+                      >
+                        {item}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
