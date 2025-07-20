@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "@/utils/axios";
-import Datepicker from "tailwind-datepicker-react";
+import { DayPicker, getDefaultClassNames } from "react-day-picker";
 
 interface MovieHeaderCalendarProps {
   isOpen: boolean;
@@ -20,6 +20,7 @@ export default function MovieHeaderCalendar({
   onDateSelect,
   movieId,
 }: MovieHeaderCalendarProps) {
+  const defaultClassNames = getDefaultClassNames();
   const [savedDates, setSavedDates] = useState<SaveDateInfo[]>([]);
 
   // 캘린더가 열릴 때 해당 영화의 저장된 날짜 목록 가져오기
@@ -46,41 +47,16 @@ export default function MovieHeaderCalendar({
 
   if (!isOpen) return null;
 
-  const options = {
-    autoHide: false,
-    todayBtn: false,
-    clearBtn: false,
-    maxDate: new Date("2030.01.01"),
-    minDate: new Date("2020.01.01"),
-    theme: {
-      background: "bg-slate-200 w-[250px] absolute top-0 right-0",
-      todayBtn: "",
-      clearBtn: "",
-      icons: "",
-      text: "text-slate-900",
-      disabledText: "text-gray-400",
-      input: "w-0 h-0 opacity-0",
-      inputIcon: "",
-      selected: "bg-red-300 text-slate-900 hover:bg-red-300",
-    },
-    icons: {
-      prev: () => <span>‹</span>,
-      next: () => <span>›</span>,
-    },
-    datepickerClassNames: "top-15 right-0",
-    defaultDate:
-      savedDates.length > 0 ? new Date(savedDates[0].date) : undefined,
-
-    weekDays: ["일", "월", "화", "수", "목", "금", "토"],
-  };
-
   return (
-    <div className="absolute top-0 right-0 z-0 mt-2">
-      <Datepicker
-        options={options}
-        onChange={handleDateChange}
-        show={isOpen}
-        setShow={() => {}} // 빈 함수로 설정하여 내부 상태 변경 방지
+    <div className="absolute top-14 right-0 z-1 mt-2">
+      <DayPicker
+        mode="single"
+        classNames={{
+          today: `border-cyan-300`,
+          selected: `bg-cyan-300 border-amber-500 text-white`,
+          root: `${defaultClassNames.root} shadow-lg bg-slate-500 rounded-lg p-5`,
+          chevron: `${defaultClassNames.chevron} fill-cyan-300`,
+        }}
       />
     </div>
   );
