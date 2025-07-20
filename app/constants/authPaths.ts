@@ -13,6 +13,7 @@ export const AUTH_REQUIRED_API_PATHS = [
   "/api/user",
   "/api/saved-watch",
   "/api/saves",
+  "/api/mypage/saved-watches",
   "/api/movies/calenders",
 ];
 

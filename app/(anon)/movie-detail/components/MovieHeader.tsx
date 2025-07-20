@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FaCalendarAlt, FaRegBookmark, FaBookmark } from "react-icons/fa";
 import { getPlatformImages } from "@/app/components/Platform";
+import { useBookmark } from "../hooks/useBookmark";
 import MovieHeaderCalendar from "./MovieHeaderCalendar";
 import axios from "@/utils/axios";
 import { toast } from "react-toastify";
@@ -11,6 +12,8 @@ interface MovieHeaderProps {
   movieId?: string;
 }
 
+const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
+  const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
 const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -114,11 +117,12 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
           <FaCalendarAlt size={24} color="#fff" />
         </button>
         <button
-          className="bg-[#31343c] rounded-lg p-2 hover:bg-[#444857] cursor-pointer"
-          onClick={handleBookmarkToggle}
+          className="bg-[#31343c] rounded-lg p-2 hover:bg-[#444857] cursor-pointer disabled:opacity-50"
+          onClick={toggleBookmark}
+          disabled={isLoading}
         >
           {isBookmarked ? (
-            <FaBookmark size={24} color="#fff" />
+            <FaBookmark size={24} color="#56EBE1" />
           ) : (
             <FaRegBookmark size={24} color="#fff" />
           )}

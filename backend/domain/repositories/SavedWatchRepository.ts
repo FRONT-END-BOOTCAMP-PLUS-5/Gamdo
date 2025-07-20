@@ -7,4 +7,8 @@ export interface SavedWatchRepository {
     userId: string,
     maxLength: number
   ): Promise<{ items: SavedWatch[]; totalCount: number }>;
+  findByUserIdAndMovieId(
+    userId: string,
+    movieId: string
+  ): Promise<SavedWatch | null>;
 }
