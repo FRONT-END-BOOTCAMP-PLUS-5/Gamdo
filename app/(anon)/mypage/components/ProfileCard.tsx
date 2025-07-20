@@ -1,13 +1,12 @@
 import React from "react";
 import Image from "next/image";
+import { useUserStore } from "@/app/stores";
 
-interface ProfileCardProps {
-  userName: string;
-  email: string;
-  profileImageUrl: string;
-}
+const DEFAULT_PROFILE_IMAGE_URL = "/assets/images/sample_profile_image.png";
 
-const ProfileCard: React.FC<ProfileCardProps> = ({ userName, email }) => {
+const ProfileCard = () => {
+  const { user } = useUserStore();
+
   return (
     <section
       className="w-full h-[196px] bg-[#17181D] rounded-2xl flex items-center px-12 relative"
@@ -16,7 +15,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ userName, email }) => {
       {/* 프로필 이미지 */}
       <div className="w-36 h-36 rounded-full overflow-hidden flex-shrink-0 relative">
         <Image
-          src={"/assets/images/sample_profile_image.png"}
+          src={user?.profileImage || DEFAULT_PROFILE_IMAGE_URL}
           alt="profile"
           fill
           className="object-cover"
@@ -24,8 +23,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ userName, email }) => {
       </div>
       {/* 유저 정보 */}
       <div className="ml-8 flex flex-col justify-center">
-        <span className="text-white text-2xl font-bold mb-2">{userName}</span>
-        <span className="text-[#B0B3B8] text-base">{email}</span>
+        <span className="text-white text-2xl font-bold mb-2">{user?.name}</span>
+        <span className="text-[#B0B3B8] text-base">{user?.nickname}</span>
+        <span className="text-[#B0B3B8] text-base">{user?.loginId}</span>
       </div>
       {/* 설정 아이콘 */}
       {/*

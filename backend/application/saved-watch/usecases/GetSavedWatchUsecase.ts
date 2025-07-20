@@ -4,7 +4,10 @@ import { SavedWatchRepository } from "@/backend/domain/repositories/SavedWatchRe
 export class GetSavedWatchUsecase {
   constructor(private savedWatchRepository: SavedWatchRepository) {}
 
-  async execute(userId: string): Promise<SavedWatch[]> {
-    return this.savedWatchRepository.findSavedWatch(userId);
+  async execute(
+    userId: string,
+    maxLength: number
+  ): Promise<{ items: SavedWatch[]; totalCount: number }> {
+    return this.savedWatchRepository.findSavedWatch(userId, maxLength);
   }
 }
