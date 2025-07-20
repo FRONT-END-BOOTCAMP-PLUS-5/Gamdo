@@ -3,6 +3,7 @@ import { SavedMovieRepository } from "@/backend/domain/repositories/saves/SavedM
 import { SavedMovieRepositoryImpl } from "@/backend/infrastructure/saves/SavedMovieRepositoryImpl";
 import { SaveMovieUseCase } from "@/backend/application/saves/usecases/SaveMovieUseCase";
 import { GetCalendarMoviesUseCase } from "@/backend/application/saves/usecases/GetCalendarMoviesUseCase";
+import { DeleteSavedMovieUsecase } from "@/backend/application/saves/usecases/DeleteSavedMovieUsecase";
 import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
 import { MemoryCache } from "@/backend/common/cache/MemoryCache";
 import { CalendarResponseDto } from "@/backend/application/saves/dtos/CalendarDto";
@@ -54,6 +55,59 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.log("영화 저장 중 서버 오류:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "서버 내부 오류가 발생했습니다.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // 1. 토큰 인증 및 사용자 ID 추출
+    const authResult = verifyAuthTokens(request);
+    if (authResult.code !== "ok") {
+      return NextResponse.json(
+        { success: false, message: authResult.code },
+        { status: authResult.status }
+      );
+    }
+
+    const userId = authResult.userId;
+
+    // 2. 요청 본문에서 영화 정보 추출
+    const { movieId } = await request.json();
+
+    // 3. 영화 삭제 UseCase 실행
+    const deleteSavedMovieUsecase = new DeleteSavedMovieUsecase(
+      savedMovieRepository
+    );
+    const result = await deleteSavedMovieUsecase.execute(userId, {
+      movieId,
+    });
+
+    if (result.success) {
+      // 4. 캘린더 캐시 무효화 (영화가 삭제되었으므로)
+      calendarCache.invalidateUserCache(userId);
+
+      return NextResponse.json({
+        success: true,
+        message: result.message,
+      });
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: result.message || "영화 삭제에 실패했습니다.",
+        },
+        { status: 400 }
+      );
+    }
+  } catch (error) {
+    console.log("영화 삭제 중 서버 오류:", error);
     return NextResponse.json(
       {
         success: false,

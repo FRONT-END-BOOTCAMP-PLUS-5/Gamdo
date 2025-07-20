@@ -204,4 +204,33 @@ export class SavedMovieRepositoryImpl implements SavedMovieRepository {
       throw new Error(`영화 삭제 중 오류가 발생했습니다: ${errorMessage}`);
     }
   }
+
+  /**
+   * 사용자의 특정 영화 삭제 (모든 날짜)
+   * @param userId 사용자 ID
+   * @param movieId 영화 ID
+   * @returns 삭제 성공 여부
+   */
+  async deleteByUserIdAndMovieId(
+    userId: string,
+    movieId: string
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("calendar")
+        .delete()
+        .eq("user_id", userId)
+        .eq("movie_id", movieId);
+
+      if (error) {
+        throw new Error(`수파베이스 삭제 오류: ${error.message}`);
+      }
+
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+      throw new Error(`영화 삭제 중 오류가 발생했습니다: ${errorMessage}`);
+    }
+  }
 }

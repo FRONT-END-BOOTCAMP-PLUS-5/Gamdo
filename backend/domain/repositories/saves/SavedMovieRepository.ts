@@ -51,15 +51,10 @@ export interface SavedMovieRepository {
   findByUserIdAndDate(userId: string, date: string): Promise<SavedMovie[]>;
 
   /**
-   * 사용자의 특정 영화와 날짜로 저장된 영화 삭제
+   * 사용자의 특정 영화 삭제
    * @param userId 사용자 ID
    * @param movieId 영화 ID
-   * @param date 날짜 (YYYY-MM-DD)
    * @returns 삭제 성공 여부
    */
-  deleteByUserIdAndMovieIdAndDate(
-    userId: string,
-    movieId: string,
-    date: string
-  ): Promise<boolean>;
+  deleteByUserIdAndMovieId(userId: string, movieId: string): Promise<boolean>;
 }

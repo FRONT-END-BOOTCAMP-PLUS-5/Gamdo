@@ -45,7 +45,7 @@ export default function MovieHeaderCalendar({
     }
   };
 
-  const handleDateChange = (date: Date | undefined) => {
+  const handleDateChange = async (date: Date | undefined) => {
     if (date) {
       // UTC 시간으로 날짜 생성하여 타임존 문제 완전 해결
       const year = date.getFullYear();
@@ -55,11 +55,61 @@ export default function MovieHeaderCalendar({
       // UTC 시간으로 Date 객체 생성 (로컬 시간대 무시)
       const utcDate = new Date(Date.UTC(year, month, day));
 
-      onSavedDateChange?.(utcDate);
-      if (onDateSelect) {
-        onDateSelect(utcDate);
+      // 이미 선택된 날짜를 다시 클릭했는지 확인
+      const isSameDate =
+        savedDate &&
+        savedDate.getFullYear() === utcDate.getFullYear() &&
+        savedDate.getMonth() === utcDate.getMonth() &&
+        savedDate.getDate() === utcDate.getDate();
+
+      if (isSameDate) {
+        // 이미 선택된 날짜를 클릭하면 선택 해제
+        console.log(
+          "🗓️ 선택된 날짜를 다시 클릭했습니다. 선택을 해제합니다:",
+          utcDate
+        );
+
+        try {
+          // 영화 삭제 API 호출
+          await axios.delete("/saves", {
+            data: { movieId: movieId },
+          });
+
+          console.log("🗑️ 영화가 캘린더에서 삭제되었습니다.");
+          onSavedDateChange?.(undefined);
+
+          if (onDateSelect) {
+            onDateSelect(utcDate);
+          }
+        } catch (error) {
+          console.error("영화 삭제 중 오류:", error);
+          // 에러 발생 시 선택 상태 유지
+        }
+      } else {
+        // 새로운 날짜 선택
+        console.log("📅 새로운 날짜를 선택했습니다:", utcDate);
+        onSavedDateChange?.(utcDate);
+        if (onDateSelect) {
+          onDateSelect(utcDate);
+        }
       }
     } else {
+      console.log("🗑️ 날짜 선택이 해제되었습니다.");
+
+      // 저장된 날짜가 있을 때만 삭제 API 호출
+      if (savedDate && movieId) {
+        try {
+          // 영화 삭제 API 호출
+          await axios.delete("/saves", {
+            data: { movieId: movieId },
+          });
+
+          console.log("🗑️ 영화가 캘린더에서 삭제되었습니다.");
+        } catch (error) {
+          console.error("영화 삭제 중 오류:", error);
+        }
+      }
+
       onSavedDateChange?.(undefined);
     }
   };

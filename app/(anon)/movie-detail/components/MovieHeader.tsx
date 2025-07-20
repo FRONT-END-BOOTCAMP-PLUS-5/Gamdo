@@ -17,7 +17,7 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [savedDate, setSavedDate] = useState<Date | undefined>(undefined);
-  const { toast, showSuccess, showError, hideToast } = useToast();
+  const { toast, showSuccess, showError, showInfo, hideToast } = useToast();
 
   const handleCalendarToggle = () => {
     setIsCalendarOpen(!isCalendarOpen);
@@ -31,6 +31,20 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
 
     // 현재 저장된 날짜를 백업 (에러 시 되돌리기 위해)
     const currentSavedDate = savedDate;
+
+    // 이미 선택된 날짜를 다시 클릭했는지 확인 (선택 해제)
+    const isSameDate =
+      savedDate &&
+      savedDate.getFullYear() === date.getFullYear() &&
+      savedDate.getMonth() === date.getMonth() &&
+      savedDate.getDate() === date.getDate();
+
+    if (isSameDate) {
+      // 선택 해제 처리
+      console.log("🗑️ 영화 저장을 취소합니다:", date);
+      showInfo("영화 저장이 취소되었습니다.");
+      return;
+    }
 
     try {
       // 날짜를 YYYY-MM-DD 형식으로 변환
