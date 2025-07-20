@@ -5,11 +5,6 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "장면의 온도",
   description: "당신의 취향의 딱 맞는 영화 추천 서비스",
-  icons: {
-    icon: "/assets/icons/favicon.ico",
-    shortcut: "/assets/icons/favicon.ico",
-    apple: "/assets/icons/favicon.ico",
-  },
 };
 
 export default function RootLayout({
