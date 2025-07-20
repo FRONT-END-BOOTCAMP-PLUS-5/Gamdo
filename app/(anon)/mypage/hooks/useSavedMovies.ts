@@ -95,7 +95,9 @@ export const useSavedMovies = (maxLength: number = 6) => {
   const fetchSavedMovies = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`/saved-watch?maxLength=${maxLength}`);
+      const response = await axios.get(
+        `/mypage/saved-watches?maxLength=${maxLength}`
+      );
       console.log("API Response:", response.data);
       setSavedMovies(response.data);
       setIsSuccess(true);

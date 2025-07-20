@@ -64,7 +64,10 @@ const MoviePreviewInfo = ({
       </div>
       {/* 플랫폼, 액션 버튼, 영화 정보 */}
       <div className="flex gap-2 px-6 py-3 items-center">
-        <MovieDetailActions ottProviders={info.ott_providers} />
+        <MovieDetailActions
+          ottProviders={info.ott_providers}
+          movieId={info.id.toString()}
+        />
       </div>
       <div className="p-6">
         <div className="text-3xl font-bold text-white mb-6 mt-2 text-left">
