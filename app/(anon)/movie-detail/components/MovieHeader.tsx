@@ -1,18 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { FaCalendarAlt, FaRegBookmark, FaBookmark } from "react-icons/fa";
 import { getPlatformImages } from "@/app/components/Platform";
+import { useBookmark } from "../hooks/useBookmark";
 
 interface MovieHeaderProps {
   ottProviders?: string[];
+  movieId?: string;
 }
 
-const MovieHeader = ({ ottProviders = [] }: MovieHeaderProps) => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
-  const handleBookmarkToggle = () => {
-    setIsBookmarked(!isBookmarked);
-  };
+const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
+  const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
 
   // OTT 제공자 이미지 경로 배열 가져오기
   const platformImages = getPlatformImages(ottProviders);
@@ -62,11 +60,12 @@ const MovieHeader = ({ ottProviders = [] }: MovieHeaderProps) => {
           <FaCalendarAlt size={24} color="#fff" />
         </button>
         <button
-          className="bg-[#31343c] rounded-lg p-2 hover:bg-[#444857] cursor-pointer"
-          onClick={handleBookmarkToggle}
+          className="bg-[#31343c] rounded-lg p-2 hover:bg-[#444857] cursor-pointer disabled:opacity-50"
+          onClick={toggleBookmark}
+          disabled={isLoading}
         >
           {isBookmarked ? (
-            <FaBookmark size={24} color="#fff" />
+            <FaBookmark size={24} color="#56EBE1" />
           ) : (
             <FaRegBookmark size={24} color="#fff" />
           )}

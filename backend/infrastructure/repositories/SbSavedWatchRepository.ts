@@ -56,4 +56,27 @@ export class SbSavedWatchRepository implements SavedWatchRepository {
 
     return Mapper.toSavedWatchList(data, count ?? 0);
   }
+
+  async findByUserIdAndMovieId(
+    userId: string,
+    movieId: string
+  ): Promise<SavedWatch | null> {
+    const { data, error } = await this.supabase
+      .from("saved_watch")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("movie_id", movieId)
+      .single();
+
+    if (error) {
+      // 데이터가 없는 경우 (찜하지 않은 경우)
+      if (error.code === "PGRST116") {
+        return null;
+      }
+      // 다른 에러인 경우
+      throw new Error(error.message);
+    }
+
+    return Mapper.toSavedWatch(data as unknown as SavedWatchTable);
+  }
 }

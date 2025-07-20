@@ -1,7 +1,7 @@
 import { CreateSavedWatchDto } from "@/backend/application/saved-watch/dtos/CreateSavedWatchDto";
 import { CreateSavedWatchUsecase } from "@/backend/application/saved-watch/usecases/CreateSavedWatchUsecase";
 import { DeleteSavedWatchUsecase } from "@/backend/application/saved-watch/usecases/DeleteSavedWatchUsecase";
-import { GetSavedWatchUsecase } from "@/backend/application/saved-watch/usecases/GetSavedWatchUsecase";
+import { GetSavedWatchMovieDetailUsecase } from "@/backend/application/saved-watch/usecases/GetSavedWatchMovieDetailUsecase";
 import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
 import { SbSavedWatchRepository } from "@/backend/infrastructure/repositories/SbSavedWatchRepository";
 import { supabase } from "@/utils/supabase/client";
@@ -9,34 +9,58 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
+    // 1. 토큰 인증 및 사용자 ID 추출
     const authResult = verifyAuthTokens(req);
     if (authResult.code !== "ok") {
       return NextResponse.json(
-        { error: authResult.code },
+        { success: false, message: authResult.code },
         { status: authResult.status }
       );
     }
+
     const userId = authResult.userId;
-    if (!userId) {
+
+    // 2. 쿼리 파라미터에서 영화 ID 추출
+    const { searchParams } = new URL(req.url);
+    const movieId = searchParams.get("movieId");
+
+    // 3. 영화 ID가 없으면 에러 반환
+    if (!movieId) {
       return NextResponse.json(
-        { error: "Invalid token payload: userId missing" },
+        {
+          success: false,
+          message: "영화 ID가 필요합니다. (movieId 파라미터를 추가해주세요)",
+        },
         { status: 400 }
       );
     }
 
-    // maxLength 쿼리 파라미터 파싱
-    const { searchParams } = new URL(req.url);
-    const maxLengthParam = searchParams.get("maxLength");
-    const maxLength = maxLengthParam ? parseInt(maxLengthParam) : 6;
-
+    // 4. UseCase 실행
     const savedWatchRepository = new SbSavedWatchRepository(supabase);
-    const getSavedWatchUsecase = new GetSavedWatchUsecase(savedWatchRepository);
+    const getSavedWatchMovieDetailUsecase = new GetSavedWatchMovieDetailUsecase(
+      savedWatchRepository
+    );
 
-    const result = await getSavedWatchUsecase.execute(userId, maxLength);
-    return NextResponse.json(result, { status: 200 });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 404 });
+    const result = await getSavedWatchMovieDetailUsecase.execute(
+      userId,
+      movieId
+    );
+
+    // 5. 결과 반환
+    if (result.success) {
+      return NextResponse.json(result);
+    } else {
+      return NextResponse.json(result, { status: 400 });
+    }
+  } catch (error) {
+    console.error("찜하기 상태 조회 중 서버 오류:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "서버 내부 오류가 발생했습니다.",
+      },
+      { status: 500 }
+    );
   }
 }
 
