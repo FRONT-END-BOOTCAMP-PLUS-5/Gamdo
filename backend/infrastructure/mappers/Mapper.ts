@@ -9,4 +9,15 @@ export class Mapper {
       source.is_recommended
     );
   }
+
+  static toSavedWatchList(
+    sources: SavedWatchTable[],
+    totalCount: number
+  ): { items: SavedWatch[]; totalCount: number } {
+    const items = sources.map(this.toSavedWatch);
+    return {
+      items,
+      totalCount: totalCount,
+    };
+  }
 }

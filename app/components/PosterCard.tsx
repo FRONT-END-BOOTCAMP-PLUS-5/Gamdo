@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { twMerge } from "tailwind-merge";
 
 interface PosterCardProps {
   imageUrl: string;
@@ -20,15 +21,16 @@ export default function PosterCard({
 }: PosterCardProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-[20px] transition-transform duration-300 group cursor-pointer hover:scale-110 aspect-[308/457] ${
-        className || ""
-      }`}
+      className={twMerge(
+        "relative overflow-hidden rounded-[20px] transition-transform duration-300 group cursor-pointer hover:scale-110 aspect-[308/457] bg-slate-800",
+        className
+      )}
     >
       <Image
         src={imageUrl}
         alt={name}
         fill
-        className="object-cover rounded-[20px]"
+        className="object-cover"
         sizes="(max-width: 768px) 100vw, 308px"
       />
       <div className="absolute inset-0 bg-black/60 flex items-end justify-start opacity-0 group-hover:opacity-100 transition-opacity duration-300">
