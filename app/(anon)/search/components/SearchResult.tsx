@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CircleCard, PosterCard } from "@/app/components";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import MovieDetailModal from "../../movie-detail/components/MovieDetailModal";
 
 interface SearchResultProps {
   type: string;
@@ -34,11 +35,51 @@ export default function SearchResult({
   onTypeChange,
 }: SearchResultProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMovieDetailModal, setShowMovieDetailModal] = useState(false);
+  const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
 
   const keywordFromQuery = searchParams.get("keyword") || "";
+
+  // 영화 포스터 클릭 핸들러
+  const handleMovieClick = (movieTitle: string) => {
+    // Backend 검색 API를 사용하여 영화 ID 찾기
+    fetch(`/api/movies/search?query=${encodeURIComponent(movieTitle)}&page=1`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`검색 요청 실패: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // 검색 결과에서 영화만 필터링
+        const movie = data.results?.find(
+          (item: { media_type: string; id: number }) =>
+            item.media_type === "movie"
+        );
+
+        if (movie && movie.id) {
+          console.log(`영화 "${movieTitle}" ID 찾음:`, movie.id);
+          setSelectedMovieId(movie.id);
+          setShowMovieDetailModal(true);
+        } else {
+          console.warn(`영화 "${movieTitle}" 검색 결과 없음`);
+          alert(`"${movieTitle}" 영화 정보를 찾을 수 없습니다.`);
+        }
+      })
+      .catch((error) => {
+        console.error("영화 검색 중 오류:", error);
+        alert("영화 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.");
+      });
+  };
+
+  // 배우/감독 클릭 핸들러
+  const handlePersonClick = (personName: string) => {
+    router.push(`/search/artist?name=${encodeURIComponent(personName)}`);
+  };
 
   // 검색 실행 함수
   const performSearch = async (searchKeyword: string, searchType: string) => {
@@ -155,11 +196,16 @@ export default function SearchResult({
                 : "/assets/images/sample_profile_image.png";
 
               return (
-                <CircleCard
+                <div
                   key={result.id}
-                  imageUrl={imageUrl}
-                  name={result.name || "이름 없음"}
-                />
+                  onClick={() => handlePersonClick(result.name || "")}
+                  className="cursor-pointer"
+                >
+                  <CircleCard
+                    imageUrl={imageUrl}
+                    name={result.name || "이름 없음"}
+                  />
+                </div>
               );
             }
 
@@ -170,10 +216,24 @@ export default function SearchResult({
               : "/assets/images/no_poster_image.png";
 
             return (
-              <PosterCard key={result.id} imageUrl={imageUrl} name={title} />
+              <div
+                key={result.id}
+                onClick={() => handleMovieClick(title)}
+                className="cursor-pointer"
+              >
+                <PosterCard imageUrl={imageUrl} name={title} />
+              </div>
             );
           })}
         </div>
+      )}
+
+      {/* 영화 상세 모달 */}
+      {showMovieDetailModal && selectedMovieId && (
+        <MovieDetailModal
+          movieId={selectedMovieId}
+          setModal={() => setShowMovieDetailModal(false)}
+        />
       )}
     </div>
   );
