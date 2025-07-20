@@ -1,3 +1,5 @@
+import RecommenderPage from "./(anon)/recommender/page";
+
 export default function Home() {
-  return <div>내용</div>;
+  return <RecommenderPage />;
 }
