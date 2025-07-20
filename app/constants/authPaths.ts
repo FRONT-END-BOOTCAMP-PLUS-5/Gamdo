@@ -9,7 +9,7 @@
 // 하나의 배열에서 관리 (미들웨어용: /api 접두사 포함)
 // @@@@@@페이지 경로가 아니라 api 주소입니다.@@@@@@
 export const AUTH_REQUIRED_API_PATHS = [
-  "/api/review",
+  "/api/reviews",
   "/api/user",
   "/api/saved-watch",
   "/api/saves",
