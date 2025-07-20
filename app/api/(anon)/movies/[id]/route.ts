@@ -1,18 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { GetMovieDetailsUseCase } from "@/backend/application/movies/usecases/GetMovieDetailsUseCase";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
-  if (isNaN(id)) {
+  const { id } = await params;
+  const movieId = Number(id);
+
+  if (isNaN(movieId)) {
     return NextResponse.json({ error: "Invalid movie id" }, { status: 400 });
   }
 
   const usecase = new GetMovieDetailsUseCase();
   try {
-    const movie = await usecase.execute(id);
+    const movie = await usecase.execute(movieId);
     if (!movie) {
       return NextResponse.json({ error: "Movie not found" }, { status: 404 });
     }
