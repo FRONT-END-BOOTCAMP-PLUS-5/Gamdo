@@ -3,7 +3,7 @@
 import SavedMoviesList from "./components/SavedMoviesList";
 import ReviewSummary from "./components/ReviewSummary";
 import ProfileCard from "./components/ProfileCard";
-import CustomCalendarSection from "./components/CustomCalendarSection";
+import CustomCalendar from "./components/CustomCalendar";
 
 export default function MyPage() {
   return (
@@ -15,7 +15,7 @@ export default function MyPage() {
 
         <div className="flex justify-between">
           <div className="flex flex-col flex-shrink-0">
-            <CustomCalendarSection />
+            <CustomCalendar />
           </div>
 
           <div className="flex flex-col gap-10">

@@ -1,11 +1,11 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import SearchInput from "./components/SearchInput";
 import SearchResult from "./components/SearchResult";
 import RecommendedMovieList from "./components/RecommendedMovieList";
 
-export default function SearchPage() {
+function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -61,5 +61,15 @@ export default function SearchPage() {
         )}
       </div>
     </section>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={<div className="text-white text-center">로딩중...</div>}
+    >
+      <SearchPageContent />
+    </Suspense>
   );
 }
