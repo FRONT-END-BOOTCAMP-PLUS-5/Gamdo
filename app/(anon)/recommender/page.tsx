@@ -1184,7 +1184,7 @@ const RecommenderPage = () => {
       )}
 
       {/* 최신 영화 섹션 */}
-      <TrendMovies />
+      <TrendMovies onPosterClick={handlePosterClick} />
 
       {/* 추천 로딩 모달 */}
       {showModal && (
