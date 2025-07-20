@@ -52,6 +52,17 @@ export class TmdbApi {
     return response.data;
   }
 
+  static async getPersonCredits(personId: string): Promise<unknown> {
+    const url = `${TMDB_BASE_URL}/person/${personId}/combined_credits`;
+    const response = await axios.get(url, {
+      params: {
+        api_key: TMDB_API_KEY,
+        language: "ko-KR",
+      },
+    });
+    return response.data;
+  }
+
   static async getMovieWatchProviders(movieId: string): Promise<unknown> {
     const url = `${TMDB_BASE_URL}/movie/${movieId}/watch/providers`;
     const response = await axios.get(url, {
@@ -74,16 +85,29 @@ export class TmdbApi {
 
   static async searchMulti(
     query: string,
-    page: number = 1
+    page: number = 1,
+    language: string = "ko-KR"
   ): Promise<CertificationDto> {
     const url = `${TMDB_BASE_URL}/search/multi`;
     const response = await axios.get(url, {
       params: {
         api_key: TMDB_API_KEY,
-        language: "ko-KR",
+        language,
         query,
         page,
         include_adult: false,
+      },
+    });
+    return response.data;
+  }
+
+  static async getTrendingMovies(page: number = 1): Promise<unknown> {
+    const url = `${TMDB_BASE_URL}/trending/movie/week`;
+    const response = await axios.get(url, {
+      params: {
+        api_key: TMDB_API_KEY,
+        language: "ko-KR", // 한국어로 영화 정보 가져오기
+        page,
       },
     });
     return response.data;
