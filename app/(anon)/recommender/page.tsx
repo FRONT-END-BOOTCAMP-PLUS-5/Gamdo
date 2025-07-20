@@ -10,9 +10,11 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { WiDaySunny, WiCloudy } from "react-icons/wi";
 
-import PosterCard from "@/app/components/PosterCard";
+import ClickablePosterCard from "./components/ClickablePosterCard";
+import LoadingPoster from "./components/LoadingPoster";
 import Button from "./components/Button";
 import TrendMovies from "./components/TrendMovies";
+import MovieDetailModal from "../movie-detail/components/MovieDetailModal";
 import { useState, useEffect } from "react";
 import Image from "next/image"; // next/image 추가
 import { getLocationWeatherData } from "../../../utils/supabase/recommenders/weather";
@@ -22,6 +24,8 @@ import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showMovieDetailModal, setShowMovieDetailModal] = useState(false);
+  const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
   const [weatherData, setWeatherData] = useState<ParsedWeatherInfo | null>(
     null
   );
@@ -32,6 +36,40 @@ const RecommenderPage = () => {
   const [selectedEmotion, setSelectedEmotion] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string[]>([]);
+
+  // 포스터 클릭 핸들러
+  const handlePosterClick = (movieTitle: string) => {
+    // Backend 검색 API를 사용하여 영화 ID 찾기
+    fetch(`/api/movies/search?query=${encodeURIComponent(movieTitle)}&page=1`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`검색 요청 실패: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // 검색 결과에서 영화만 필터링
+        const movie = data.results?.find(
+          (item: { media_type: string; id: number }) =>
+            item.media_type === "movie"
+        );
+
+        if (movie && movie.id) {
+          console.log(`영화 "${movieTitle}" ID 찾음:`, movie.id);
+          setSelectedMovieId(movie.id);
+          setShowMovieDetailModal(true);
+        } else {
+          console.warn(`영화 "${movieTitle}" 검색 결과 없음`);
+          toast.error(`"${movieTitle}" 영화 정보를 찾을 수 없습니다.`);
+        }
+      })
+      .catch((error) => {
+        console.error("영화 검색 중 오류:", error);
+        toast.error(
+          "영화 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요."
+        );
+      });
+  };
 
   // 공통 버튼 선택/해제 함수
   const toggleSelection = (
@@ -141,25 +179,80 @@ const RecommenderPage = () => {
     time: false,
   });
 
-  // 무한 루프 슬라이더 핸들러
-  const handlePrev = () => {
-    setCurrentStartIndex((prev) => {
-      if (prev === 0) {
-        // 맨 처음이면 마지막으로 (순환)
-        return posterInfos.length - 1;
+  // 포스터 로딩 상태 관리 함수들
+  const setPosterLoading = (index: number, isLoading: boolean) => {
+    setLoadingPosters((prev) => {
+      const newSet = new Set(prev);
+      if (isLoading) {
+        newSet.add(index);
+      } else {
+        newSet.delete(index);
       }
-      return prev - 1;
+      return newSet;
     });
   };
 
-  const handleNext = () => {
-    setCurrentStartIndex((prev) => {
-      if (prev >= posterInfos.length - 1) {
-        // 맨 끝이면 처음으로 (순환)
-        return 0;
+  const setPosterLoaded = (posterUrl: string) => {
+    setLoadedPosters((prev) => new Set(prev).add(posterUrl));
+  };
+
+  const isPosterLoaded = (posterUrl: string) => {
+    return loadedPosters.has(posterUrl);
+  };
+
+  // 무한 루프 슬라이더 핸들러
+  const handlePrev = () => {
+    const newStartIndex =
+      currentStartIndex === 0 ? posterInfos.length - 1 : currentStartIndex - 1;
+
+    // 새로 표시될 포스터들의 인덱스 계산
+    const newVisibleIndices = [];
+    for (let i = 0; i < 4; i++) {
+      const index = (newStartIndex + i) % posterInfos.length;
+      newVisibleIndices.push(index);
+    }
+
+    // 새로 표시되는 포스터만 로딩 상태로 설정
+    newVisibleIndices.forEach((posterIndex, displayIndex) => {
+      const poster = posterInfos[posterIndex];
+      if (poster && poster.posterUrl && !isPosterLoaded(poster.posterUrl)) {
+        setPosterLoading(displayIndex, true);
+
+        // 백업: 2.5초 후 자동으로 로딩 상태 해제
+        setTimeout(() => {
+          setPosterLoading(displayIndex, false);
+        }, 2500);
       }
-      return prev + 1;
     });
+
+    setCurrentStartIndex(newStartIndex);
+  };
+
+  const handleNext = () => {
+    const newStartIndex =
+      currentStartIndex >= posterInfos.length - 1 ? 0 : currentStartIndex + 1;
+
+    // 새로 표시될 포스터들의 인덱스 계산
+    const newVisibleIndices = [];
+    for (let i = 0; i < 4; i++) {
+      const index = (newStartIndex + i) % posterInfos.length;
+      newVisibleIndices.push(index);
+    }
+
+    // 새로 표시되는 포스터만 로딩 상태로 설정
+    newVisibleIndices.forEach((posterIndex, displayIndex) => {
+      const poster = posterInfos[posterIndex];
+      if (poster && poster.posterUrl && !isPosterLoaded(poster.posterUrl)) {
+        setPosterLoading(displayIndex, true);
+
+        // 백업: 2.5초 후 자동으로 로딩 상태 해제
+        setTimeout(() => {
+          setPosterLoading(displayIndex, false);
+        }, 2500);
+      }
+    });
+
+    setCurrentStartIndex(newStartIndex);
   };
 
   // 현재 화면에 보이는 포스터 4개 (순환 로직 포함)
@@ -289,39 +382,74 @@ const RecommenderPage = () => {
         });
       }, 2700);
 
+      // AI API 호출 전 요청 데이터 로깅
+      const requestData = {
+        type: "movie-recommendation",
+        weather: weatherData,
+        userSelection: {
+          weather: selectedWeather,
+          emotion: selectedEmotion,
+          category: selectedCategory,
+          time: selectedTime,
+        },
+        previousMovieTitles: previousMovieTitles, // 이전 추천 영화 목록 전달
+        temperature: 0.7,
+        max_tokens: 4096,
+      };
+
+      console.log("=== AI API 요청 시작 ===");
+      console.log("요청 URL:", "/api/geminis");
+      console.log("요청 메서드:", "POST");
+      console.log("요청 데이터:", JSON.stringify(requestData, null, 2));
+      console.log("날씨 데이터:", weatherData);
+      console.log("사용자 선택:", {
+        weather: selectedWeather,
+        emotion: selectedEmotion,
+        category: selectedCategory,
+        time: selectedTime,
+      });
+      console.log("이전 영화 목록:", previousMovieTitles);
+
       // AI API 호출
       const response = await fetch("/api/geminis", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          type: "movie-recommendation",
-          weather: weatherData,
-          userSelection: {
-            weather: selectedWeather,
-            emotion: selectedEmotion,
-            category: selectedCategory,
-            time: selectedTime,
-          },
-          previousMovieTitles: previousMovieTitles, // 이전 추천 영화 목록 전달
-          temperature: 0.7,
-          max_tokens: 4096,
-        }),
+        body: JSON.stringify(requestData),
       });
 
+      console.log("=== AI API 응답 처리 시작 ===");
+      console.log("응답 상태:", response.status);
+      console.log("응답 상태 텍스트:", response.statusText);
+      console.log("응답 헤더:", Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
+        console.error("=== AI API 응답 오류 ===");
+        console.error("HTTP 상태 코드:", response.status);
+        console.error("HTTP 상태 텍스트:", response.statusText);
         throw new Error(`AI 추천 요청 실패: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("AI 응답:", data);
+      console.log("=== AI API 응답 데이터 ===");
+      console.log("전체 응답:", JSON.stringify(data, null, 2));
+      console.log("응답 success 필드:", data.success);
+      console.log("응답 data 필드:", data.data);
+      console.log("응답 error 필드:", data.error);
 
       if (!data.success || !data.data) {
+        console.error("=== AI API 응답 검증 실패 ===");
+        console.error("success 필드:", data.success);
+        console.error("data 필드:", data.data);
+        console.error("error 필드:", data.error);
         throw new Error(data.error || "AI 추천을 받을 수 없습니다.");
       }
 
-      console.log("AI 추천 성공:", data.data);
+      console.log("=== AI 추천 성공 ===");
+      console.log("추천 데이터:", data.data);
+      console.log("영화 제목 배열:", data.data.movieTitles);
+      console.log("영화 제목 개수:", data.data.movieTitles?.length || 0);
 
       // AI 추천 성공 시 영화 제목 배열 저장
       if (Array.isArray(data.data.movieTitles)) {
@@ -330,7 +458,39 @@ const RecommenderPage = () => {
         setShowPosters(true); // 포스터 영역 표시
       }
     } catch (error) {
-      console.error("AI 추천 요청 중 오류:", error);
+      console.error("=== AI 추천 요청 중 오류 발생 ===");
+      console.error(
+        "에러 타입:",
+        error instanceof Error ? error.constructor.name : typeof error
+      );
+      console.error(
+        "에러 메시지:",
+        error instanceof Error ? error.message : String(error)
+      );
+      console.error(
+        "에러 스택:",
+        error instanceof Error ? error.stack : "스택 정보 없음"
+      );
+      console.error("전체 에러 객체:", error);
+
+      // 네트워크 에러인지 확인
+      if (
+        error instanceof Error &&
+        error.name === "TypeError" &&
+        error.message.includes("fetch")
+      ) {
+        console.error("네트워크 연결 오류로 판단됨");
+      }
+
+      // JSON 파싱 에러인지 확인
+      if (
+        error instanceof Error &&
+        error.name === "SyntaxError" &&
+        error.message.includes("JSON")
+      ) {
+        console.error("JSON 파싱 오류로 판단됨");
+      }
+
       setSpin(false); // 에러 시에는 즉시 spin false
 
       // 에러 시 기존 로딩 토스트 종료
@@ -348,6 +508,8 @@ const RecommenderPage = () => {
 
   // 포스터 이미지 로딩 완료 개수 상태
   const [loadedCount, setLoadedCount] = useState(0);
+  const [loadingPosters, setLoadingPosters] = useState<Set<number>>(new Set());
+  const [loadedPosters, setLoadedPosters] = useState<Set<string>>(new Set());
 
   // posterInfos가 바뀔 때마다 loadedCount 초기화 + 추천 결과가 0개면 spin false
   useEffect(() => {
@@ -806,8 +968,8 @@ const RecommenderPage = () => {
       {/* 추천 영화 섹션 */}
       {showPosters && (
         <div className="mt-10">
-          <div className="flex border-2 border-white p-4 rounded-lg mb-8">
-            <div className="flex-start text-2xl font-bold text-white">
+          <div className="flex p-4 mb-8">
+            <div className="flex-start text-4xl font-bold text-white">
               추천 영화
             </div>
           </div>
@@ -860,22 +1022,38 @@ const RecommenderPage = () => {
 
             {/* 왼쪽 포스터 카드 */}
             <div className="flex w-1/6 h-3/4 justify-center relative group">
-              {/* posterUrl이 있는 경우에만 렌더링 */}
-              {visiblePosters[0] && visiblePosters[0].posterUrl && (
+              {/* 로딩 중이거나 포스터가 없는 경우 로딩 컴포넌트 표시 */}
+              {loadingPosters.has(0) ||
+              !visiblePosters[0] ||
+              !visiblePosters[0].posterUrl ? (
+                <LoadingPoster className="w-full h-full" />
+              ) : (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[0].posterUrl}
                     name={visiblePosters[0].title || "1"}
                     className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+                    onClick={() => handlePosterClick(visiblePosters[0].title)}
                   />
-                  {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
+                  {/* invisible next/image로 onLoad 감지 */}
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
                       src={visiblePosters[0].posterUrl}
                       alt=""
                       fill
                       style={{ display: "none" }}
-                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      onLoad={() => {
+                        setLoadedCount((count) => count + 1);
+                        setPosterLoading(0, false);
+                        setPosterLoaded(visiblePosters[0].posterUrl);
+                      }}
+                      onError={() => {
+                        console.error(
+                          "왼쪽 포스터 이미지 로드 실패:",
+                          visiblePosters[0].posterUrl
+                        );
+                        setPosterLoading(0, false);
+                      }}
                       sizes="(max-width: 768px) 100vw, 308px"
                       priority
                     />
@@ -887,12 +1065,17 @@ const RecommenderPage = () => {
             {/* 가운데 포스터 카드 */}
             <div className="flex w-3/5 h-1/1 mx-20">
               {/* 가운데 왼쪽 */}
-              {visiblePosters[1] && visiblePosters[1].posterUrl && (
+              {loadingPosters.has(1) ||
+              !visiblePosters[1] ||
+              !visiblePosters[1].posterUrl ? (
+                <LoadingPoster className="mr-2.5 max-w-full max-h-full object-contain" />
+              ) : (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[1].posterUrl}
                     name={visiblePosters[1].title || "2"}
                     className="mr-2.5 max-w-full max-h-full object-contain"
+                    onClick={() => handlePosterClick(visiblePosters[1].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
@@ -900,7 +1083,18 @@ const RecommenderPage = () => {
                       alt=""
                       fill
                       style={{ display: "none" }}
-                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      onLoad={() => {
+                        setLoadedCount((count) => count + 1);
+                        setPosterLoading(1, false);
+                        setPosterLoaded(visiblePosters[1].posterUrl);
+                      }}
+                      onError={() => {
+                        console.error(
+                          "가운데 왼쪽 포스터 이미지 로드 실패:",
+                          visiblePosters[1].posterUrl
+                        );
+                        setPosterLoading(1, false);
+                      }}
                       sizes="(max-width: 768px) 100vw, 308px"
                       priority
                     />
@@ -908,12 +1102,17 @@ const RecommenderPage = () => {
                 </>
               )}
               {/* 가운데 오른쪽 */}
-              {visiblePosters[2] && visiblePosters[2].posterUrl && (
+              {loadingPosters.has(2) ||
+              !visiblePosters[2] ||
+              !visiblePosters[2].posterUrl ? (
+                <LoadingPoster className="ml-2.5 max-w-full max-h-full object-contain" />
+              ) : (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[2].posterUrl}
                     name={visiblePosters[2].title || "3"}
                     className="ml-2.5 max-w-full max-h-full object-contain"
+                    onClick={() => handlePosterClick(visiblePosters[2].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
@@ -921,7 +1120,18 @@ const RecommenderPage = () => {
                       alt=""
                       fill
                       style={{ display: "none" }}
-                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      onLoad={() => {
+                        setLoadedCount((count) => count + 1);
+                        setPosterLoading(2, false);
+                        setPosterLoaded(visiblePosters[2].posterUrl);
+                      }}
+                      onError={() => {
+                        console.error(
+                          "가운데 오른쪽 포스터 이미지 로드 실패:",
+                          visiblePosters[2].posterUrl
+                        );
+                        setPosterLoading(2, false);
+                      }}
                       sizes="(max-width: 768px) 100vw, 308px"
                       priority
                     />
@@ -931,12 +1141,17 @@ const RecommenderPage = () => {
             </div>
             {/* 오른쪽 포스터 카드 */}
             <div className="flex w-1/6 h-3/4 relative group">
-              {visiblePosters[3] && visiblePosters[3].posterUrl && (
+              {loadingPosters.has(3) ||
+              !visiblePosters[3] ||
+              !visiblePosters[3].posterUrl ? (
+                <LoadingPoster className="w-full h-full transition-transform duration-300 group-hover:scale-110" />
+              ) : (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[3].posterUrl}
                     name={visiblePosters[3].title || "4"}
-                    className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-full transition-transform duration-300 group-hover:scale-110"
+                    onClick={() => handlePosterClick(visiblePosters[3].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
@@ -944,7 +1159,18 @@ const RecommenderPage = () => {
                       alt=""
                       fill
                       style={{ display: "none" }}
-                      onLoad={() => setLoadedCount((count) => count + 1)}
+                      onLoad={() => {
+                        setLoadedCount((count) => count + 1);
+                        setPosterLoading(3, false);
+                        setPosterLoaded(visiblePosters[3].posterUrl);
+                      }}
+                      onError={() => {
+                        console.error(
+                          "오른쪽 포스터 이미지 로드 실패:",
+                          visiblePosters[3].posterUrl
+                        );
+                        setPosterLoading(3, false);
+                      }}
                       sizes="(max-width: 768px) 100vw, 308px"
                       priority
                     />
@@ -958,7 +1184,7 @@ const RecommenderPage = () => {
       )}
 
       {/* 최신 영화 섹션 */}
-      <TrendMovies />
+      <TrendMovies onPosterClick={handlePosterClick} />
 
       {/* 추천 로딩 모달 */}
       {showModal && (
@@ -995,6 +1221,17 @@ const RecommenderPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 영화 상세 모달 */}
+      {showMovieDetailModal && selectedMovieId && (
+        <MovieDetailModal
+          setModal={() => {
+            setShowMovieDetailModal(false);
+            setSelectedMovieId(null);
+          }}
+          movieId={selectedMovieId}
+        />
       )}
     </div>
   );
