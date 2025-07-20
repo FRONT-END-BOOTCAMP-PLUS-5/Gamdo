@@ -72,14 +72,11 @@ export class SaveMovieUseCase {
       const existingMovies =
         await this.savedMovieRepository.findByUserIdAndMovieId(userId, movieId);
       if (existingMovies.length > 0) {
-        // 기존 저장된 영화 삭제
-        for (const existingMovie of existingMovies) {
-          await this.savedMovieRepository.deleteByUserIdAndMovieIdAndDate(
-            userId,
-            movieId,
-            existingMovie.savedAt
-          );
-        }
+        // 기존 저장된 영화 삭제 (해당 영화의 모든 데이터)
+        await this.savedMovieRepository.deleteByUserIdAndMovieId(
+          userId,
+          movieId
+        );
       }
 
       // 4. SavedMovie 엔티티 생성
