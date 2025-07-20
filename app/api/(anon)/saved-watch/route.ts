@@ -24,11 +24,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // maxLength 쿼리 파라미터 파싱
+    const { searchParams } = new URL(req.url);
+    const maxLengthParam = searchParams.get("maxLength");
+    const maxLength = maxLengthParam ? parseInt(maxLengthParam) : 6;
+
     const savedWatchRepository = new SbSavedWatchRepository(supabase);
     const getSavedWatchUsecase = new GetSavedWatchUsecase(savedWatchRepository);
 
-    const savedWatch = await getSavedWatchUsecase.execute(userId);
-    return NextResponse.json({ savedWatch }, { status: 200 });
+    const result = await getSavedWatchUsecase.execute(userId, maxLength);
+    return NextResponse.json(result, { status: 200 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 404 });

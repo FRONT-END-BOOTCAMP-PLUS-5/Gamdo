@@ -32,17 +32,28 @@ export class SbSavedWatchRepository implements SavedWatchRepository {
     if (error) throw new Error(error.message);
   }
 
-  async findSavedWatch(userId: string): Promise<SavedWatch[]> {
+  async findSavedWatch(
+    userId: string,
+    maxLength: number = 6
+  ): Promise<{ items: SavedWatch[]; totalCount: number }> {
+    // 전체 개수를 가져오기 위한 쿼리
+    const { count, error: countError } = await this.supabase
+      .from("saved_watch")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    if (countError) throw new Error(countError.message);
+
+    // 제한된 개수의 데이터를 가져오기 위한 쿼리
     const { data, error } = await this.supabase
       .from("saved_watch")
       .select("*")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .limit(maxLength);
 
     if (error) throw new Error(error.message);
-    if (!data || data.length === 0) return [];
+    if (!data || data.length === 0) return { items: [], totalCount: 0 };
 
-    return data.map((item) =>
-      Mapper.toSavedWatch(item as unknown as SavedWatchTable)
-    );
+    return Mapper.toSavedWatchList(data, count ?? 0);
   }
 }
