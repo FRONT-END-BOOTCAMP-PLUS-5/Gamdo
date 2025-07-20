@@ -14,13 +14,7 @@ interface MovieHeaderProps {
 
 const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
-const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-
-  const handleBookmarkToggle = () => {
-    setIsBookmarked(!isBookmarked);
-  };
 
   const handleCalendarToggle = () => {
     setIsCalendarOpen(!isCalendarOpen);
