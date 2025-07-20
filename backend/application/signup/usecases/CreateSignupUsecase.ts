@@ -1,0 +1,74 @@
+import { UserRepository } from "../../../domain/repositories/UserRepository";
+import { SignupRequestDto, SignupResponseDto } from "../dtos/SignupDto";
+import { User } from "../../../domain/entities/User";
+import {
+  validateName,
+  validateEmail,
+  validatePassword,
+  validateNickname,
+} from "@/utils/validation";
+import { hashPassword } from "@/utils/hash";
+
+export class CreateSignupUseCase {
+  constructor(private userRepository: UserRepository) {}
+
+  async execute(dto: SignupRequestDto): Promise<SignupResponseDto> {
+    // 0. 유효성 검사
+    if (!validateName(dto.name)) {
+      throw new Error(
+        "이름은 10자리 이내 한글, 영어, 숫자만 입력할 수 있습니다. (한글 자음/모음 분리 불가)"
+      );
+    }
+    if (!validateEmail(dto.loginId)) {
+      throw new Error("이메일 형식의 아이디만 입력할 수 있습니다.");
+    }
+    if (!validatePassword(dto.password)) {
+      throw new Error(
+        "비밀번호는 숫자, 영어, 특수문자를 조합하여 입력해주세요."
+      );
+    }
+    if (!validateNickname(dto.nickname)) {
+      throw new Error(
+        "닉네임은 8자리 이내 한글, 영어, 숫자, 특수문자만 입력할 수 있습니다."
+      );
+    }
+
+    // 1. 이메일, 닉네임 중복 체크
+    const emailExists = await this.userRepository.isEmailExists(dto.loginId);
+    if (emailExists) {
+      throw new Error("이미 사용 중인 이메일입니다.");
+    }
+
+    const nicknameExists = await this.userRepository.isNicknameExists(
+      dto.nickname
+    );
+    if (nicknameExists) {
+      throw new Error("이미 사용 중인 닉네임입니다.");
+    }
+
+    const hashedPassword = await hashPassword(dto.password);
+
+    // 2. User 엔티티 생성
+    const user = new User(
+      dto.name,
+      dto.loginId,
+      hashedPassword,
+      dto.nickname,
+      dto.profileImage ?? null,
+      "user" // role "user" 고정
+    );
+
+    // 3. DB에 저장
+    const created = await this.userRepository.createUser(user);
+
+    return {
+      userId: created.userId!,
+      name: created.name,
+      loginId: created.loginId,
+      nickname: created.nickname,
+      profileImage: created.profileImage,
+      role: created.role,
+      createdAt: created.createdAt!,
+    };
+  }
+}
