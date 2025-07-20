@@ -76,7 +76,7 @@ export class SavedMovieRepositoryImpl implements SavedMovieRepository {
     try {
       // 월의 시작일과 끝일 계산
       const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
-      const endDate = new Date(year, month, 0).toISOString().split("T")[0]; // 월의 마지막 날
+      const endDate = new Date(year, month + 1, 0).toISOString().split("T")[0]; // 월의 마지막 날
 
       const { data, error } = await supabase
         .from("calendar")
