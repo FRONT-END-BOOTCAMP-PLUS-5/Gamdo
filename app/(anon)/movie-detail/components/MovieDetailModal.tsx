@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
 import Modal from "@/app/components/Modal";
 import MoviePreviewInfo from "./MoviePreviewInfo";
 import MovieReviewList from "./MovieReviewList";
@@ -13,13 +12,7 @@ interface ModalProps {
   movieId?: number;
 }
 
-const MovieDetailModal = ({ setModal, movieId: propMovieId }: ModalProps) => {
-  const params = useParams();
-
-  // URL에서 movieId 파싱
-  const urlMovieId = params?.id ? Number(params.id) : null;
-  const movieId = propMovieId || urlMovieId || 550; // Fight Club (실제 TMDB 영화 ID)
-
+const MovieDetailModal = ({ setModal, movieId = 550 }: ModalProps) => {
   // 접힘 상태에서는 preview만 사용
   const [moviePreview, setMoviePreview] = useState<MoviePreviewDto | null>(
     null
