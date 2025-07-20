@@ -10,9 +10,10 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { WiDaySunny, WiCloudy } from "react-icons/wi";
 
-import PosterCard from "@/app/components/PosterCard";
+import ClickablePosterCard from "./components/ClickablePosterCard";
 import Button from "./components/Button";
 import TrendMovies from "./components/TrendMovies";
+import MovieDetailModal from "../movie-detail/components/MovieDetailModal";
 import { useState, useEffect } from "react";
 import Image from "next/image"; // next/image 추가
 import { getLocationWeatherData } from "../../../utils/supabase/recommenders/weather";
@@ -22,6 +23,8 @@ import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showMovieDetailModal, setShowMovieDetailModal] = useState(false);
+  const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
   const [weatherData, setWeatherData] = useState<ParsedWeatherInfo | null>(
     null
   );
@@ -32,6 +35,40 @@ const RecommenderPage = () => {
   const [selectedEmotion, setSelectedEmotion] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string[]>([]);
+
+  // 포스터 클릭 핸들러
+  const handlePosterClick = (movieTitle: string) => {
+    // Backend 검색 API를 사용하여 영화 ID 찾기
+    fetch(`/api/movies/search?query=${encodeURIComponent(movieTitle)}&page=1`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`검색 요청 실패: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // 검색 결과에서 영화만 필터링
+        const movie = data.results?.find(
+          (item: { media_type: string; id: number }) =>
+            item.media_type === "movie"
+        );
+
+        if (movie && movie.id) {
+          console.log(`영화 "${movieTitle}" ID 찾음:`, movie.id);
+          setSelectedMovieId(movie.id);
+          setShowMovieDetailModal(true);
+        } else {
+          console.warn(`영화 "${movieTitle}" 검색 결과 없음`);
+          toast.error(`"${movieTitle}" 영화 정보를 찾을 수 없습니다.`);
+        }
+      })
+      .catch((error) => {
+        console.error("영화 검색 중 오류:", error);
+        toast.error(
+          "영화 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요."
+        );
+      });
+  };
 
   // 공통 버튼 선택/해제 함수
   const toggleSelection = (
@@ -806,8 +843,8 @@ const RecommenderPage = () => {
       {/* 추천 영화 섹션 */}
       {showPosters && (
         <div className="mt-10">
-          <div className="flex border-2 border-white p-4 rounded-lg mb-8">
-            <div className="flex-start text-2xl font-bold text-white">
+          <div className="flex p-4 mb-8">
+            <div className="flex-start text-4xl font-bold text-white">
               추천 영화
             </div>
           </div>
@@ -863,10 +900,11 @@ const RecommenderPage = () => {
               {/* posterUrl이 있는 경우에만 렌더링 */}
               {visiblePosters[0] && visiblePosters[0].posterUrl && (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[0].posterUrl}
                     name={visiblePosters[0].title || "1"}
                     className="w-full h-full group-hover:scale-110 transition-transform duration-300"
+                    onClick={() => handlePosterClick(visiblePosters[0].title)}
                   />
                   {/* invisible next/image로 onLoad 감지 (공통 컴포넌트 수정 X, position: relative로 감싸 fill 경고 방지) */}
                   <div style={{ position: "relative", width: 0, height: 0 }}>
@@ -889,10 +927,11 @@ const RecommenderPage = () => {
               {/* 가운데 왼쪽 */}
               {visiblePosters[1] && visiblePosters[1].posterUrl && (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[1].posterUrl}
                     name={visiblePosters[1].title || "2"}
                     className="mr-2.5 max-w-full max-h-full object-contain"
+                    onClick={() => handlePosterClick(visiblePosters[1].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
@@ -910,10 +949,11 @@ const RecommenderPage = () => {
               {/* 가운데 오른쪽 */}
               {visiblePosters[2] && visiblePosters[2].posterUrl && (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[2].posterUrl}
                     name={visiblePosters[2].title || "3"}
                     className="ml-2.5 max-w-full max-h-full object-contain"
+                    onClick={() => handlePosterClick(visiblePosters[2].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
@@ -933,10 +973,11 @@ const RecommenderPage = () => {
             <div className="flex w-1/6 h-3/4 relative group">
               {visiblePosters[3] && visiblePosters[3].posterUrl && (
                 <>
-                  <PosterCard
+                  <ClickablePosterCard
                     imageUrl={visiblePosters[3].posterUrl}
                     name={visiblePosters[3].title || "4"}
-                    className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-full transition-transform duration-300 group-hover:scale-110"
+                    onClick={() => handlePosterClick(visiblePosters[3].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
                     <Image
@@ -995,6 +1036,17 @@ const RecommenderPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 영화 상세 모달 */}
+      {showMovieDetailModal && selectedMovieId && (
+        <MovieDetailModal
+          setModal={() => {
+            setShowMovieDetailModal(false);
+            setSelectedMovieId(null);
+          }}
+          movieId={selectedMovieId}
+        />
       )}
     </div>
   );

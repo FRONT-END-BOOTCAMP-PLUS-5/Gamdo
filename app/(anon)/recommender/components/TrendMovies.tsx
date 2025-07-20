@@ -57,8 +57,8 @@ const trendMovies = [
 const TrendMovies = () => {
   return (
     <div className="mt-10">
-      <div className="flex border-2 border-white p-4 rounded-lg mb-8">
-        <div className="flex-start text-2xl font-bold text-white">
+      <div className="flex p-4 mb-8">
+        <div className="flex-start text-4xl font-bold text-white">
           최신 영화
         </div>
       </div>

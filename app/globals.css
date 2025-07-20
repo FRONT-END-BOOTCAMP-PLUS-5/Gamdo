@@ -27,8 +27,8 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 2rem; /* 버튼 둥글기와 맞추세요 */
-  width: 200px; /* 원하는 크기로 조정 */
-  height: 60px;
+  width: 280px; /* 원하는 크기로 조정 */
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
