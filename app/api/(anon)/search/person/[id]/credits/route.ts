@@ -5,10 +5,10 @@ import { TmdbApi } from "@/utils/tmdb/TmdbApi";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const personId = params.id;
+    const { id: personId } = await params;
 
     if (!personId) {
       return NextResponse.json(

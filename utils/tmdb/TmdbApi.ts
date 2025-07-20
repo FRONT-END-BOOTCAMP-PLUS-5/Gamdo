@@ -85,13 +85,14 @@ export class TmdbApi {
 
   static async searchMulti(
     query: string,
-    page: number = 1
+    page: number = 1,
+    language: string = "ko-KR"
   ): Promise<CertificationDto> {
     const url = `${TMDB_BASE_URL}/search/multi`;
     const response = await axios.get(url, {
       params: {
         api_key: TMDB_API_KEY,
-        // language 파라미터 제거하여 모든 언어의 결과 제공
+        language,
         query,
         page,
         include_adult: false,

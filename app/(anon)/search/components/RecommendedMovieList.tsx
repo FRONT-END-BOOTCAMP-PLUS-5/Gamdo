@@ -41,8 +41,13 @@ export default function RecommendedMovieList() {
 
       const data: TrendingResponse = await response.json();
 
+      // poster_path가 있는 영화만 필터링
+      const moviesWithPosters = data.results.filter(
+        (movie) => movie.poster_path
+      );
+
       // 전체 데이터에서 랜덤으로 8개 선택
-      const shuffledMovies = data.results.sort(() => Math.random() - 0.5);
+      const shuffledMovies = moviesWithPosters.sort(() => Math.random() - 0.5);
       const limitedMovies = shuffledMovies.slice(0, 8);
       setTrendingMovies(limitedMovies);
     } catch (err) {

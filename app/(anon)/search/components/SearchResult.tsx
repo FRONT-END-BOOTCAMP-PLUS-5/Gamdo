@@ -102,10 +102,23 @@ export default function SearchResult({
 
       const data: SearchResponse = await response.json();
 
-      // type 필터링 (all이 아닌 경우)
+      // type 필터링 및 이미지 필터링
       let filteredResults = data.results;
+
+      // 이미지가 없는 항목 제거
+      filteredResults = filteredResults.filter((result) => {
+        if (result.media_type === "person") {
+          // 배우/감독은 profile_path가 있어야 함
+          return result.profile_path;
+        } else {
+          // 영화/TV는 poster_path가 있어야 함
+          return result.poster_path;
+        }
+      });
+
+      // type 필터링 (all이 아닌 경우)
       if (searchType !== "all") {
-        filteredResults = data.results.filter((result) => {
+        filteredResults = filteredResults.filter((result) => {
           if (searchType === "movie" && result.media_type === "movie")
             return true;
           if (searchType === "tv" && result.media_type === "tv") return true;
@@ -189,22 +202,20 @@ export default function SearchResult({
       {!isLoading && !error && searchResults.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-center">
           {searchResults.map((result) => {
-            // 배우/감독인 경우 CircleCard 사용
-            if (result.media_type === "person") {
-              const imageUrl = result.profile_path
-                ? `https://image.tmdb.org/t/p/w185${result.profile_path}`
-                : "/assets/images/sample_profile_image.png";
+            // 배우/감독인 경우 CircleCard 사용 (프로필 이미지가 있는 경우만)
+            if (result.media_type === "person" && result.profile_path) {
+              const imageUrl = `https://image.tmdb.org/t/p/w185${result.profile_path}`;
+
+              // 한글 이름 우선 사용 (TMDB에서 한국어로 검색했으므로 name이 한글일 가능성이 높음)
+              const displayName = result.name || "이름 없음";
 
               return (
                 <div
                   key={result.id}
-                  onClick={() => handlePersonClick(result.name || "")}
+                  onClick={() => handlePersonClick(displayName)}
                   className="cursor-pointer"
                 >
-                  <CircleCard
-                    imageUrl={imageUrl}
-                    name={result.name || "이름 없음"}
-                  />
+                  <CircleCard imageUrl={imageUrl} name={displayName} />
                 </div>
               );
             }

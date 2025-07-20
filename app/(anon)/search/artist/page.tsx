@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PosterCard } from "@/app/components";
 import MovieDetailModal from "../../movie-detail/components/MovieDetailModal";
@@ -21,7 +21,7 @@ interface PersonCreditsResponse {
   crew: CastCredit[];
 }
 
-export default function ArtistPage() {
+function ArtistPageContent() {
   const searchParams = useSearchParams();
   const [castCredits, setCastCredits] = useState<CastCredit[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +94,7 @@ export default function ArtistPage() {
         throw new Error(`"${personName}" 배우 정보를 찾을 수 없습니다.`);
       }
 
+      // 한글 이름 우선 사용
       setPersonName(person.name || personName);
 
       // 2. 배우 ID로 출연작 가져오기 (백엔드 API 사용)
@@ -107,7 +108,7 @@ export default function ArtistPage() {
 
       const creditsData: PersonCreditsResponse = await creditsResponse.json();
 
-      // cast에서 영화/TV만 필터링하고 poster_path가 있는 것만 선택
+      // cast에서 영화만 필터링하고 poster_path가 있는 것만 선택
       const filteredCast = creditsData.cast
         .filter((credit) => credit.media_type === "movie" && credit.poster_path)
         .sort((a, b) => {
@@ -198,5 +199,13 @@ export default function ArtistPage() {
         />
       )}
     </section>
+  );
+}
+
+export default function ArtistPage() {
+  return (
+    <Suspense fallback={<div>로딩 중...</div>}>
+      <ArtistPageContent />
+    </Suspense>
   );
 }
