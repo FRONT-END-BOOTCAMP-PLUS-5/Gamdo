@@ -1,50 +1,74 @@
+"use client";
+import { Modal, PosterCard, PosterCardSkeleton } from "@/app/components";
+import { twMerge } from "tailwind-merge";
 import { FaBookmark } from "react-icons/fa";
-
-const dummyMovies = [
-  {
-    movie_id: "299534",
-    title: "어벤져스: 엔드게임",
-    poster: "/assets/posters/avengers.jpg",
-  },
-  {
-    movie_id: "155",
-    title: "다크 나이트",
-    poster: "/assets/posters/darkknight.jpg",
-  },
-  { movie_id: "123", title: "인턴", poster: "/assets/posters/intern.jpg" },
-  { movie_id: "456", title: "A.I.", poster: "/assets/posters/ai.jpg" },
-  { movie_id: "789", title: "Her", poster: "/assets/posters/her.jpg" },
-  { movie_id: "101", title: "워 호스", poster: "/assets/posters/warhorse.jpg" },
-];
+import { useState } from "react";
+import SavedMoviesListModal from "./SavedMoviesListModal";
+import { useSavedMovies } from "../hooks/useSavedMovies";
 
 export default function SavedMoviesList() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { savedMovies, moviesWithPosters, isLoading, isSuccess } =
+    useSavedMovies(6);
+
   return (
-    <div className="mb-2 relative w-fit">
-      {/* 볼래요 헤더 (박스 밖) */}
+    <section className="mb-2 relative w-fit">
+      {isModalOpen && (
+        <Modal setModal={() => setIsModalOpen(false)}>
+          <SavedMoviesListModal />
+        </Modal>
+      )}
+
       <div className="flex items-center gap-1 text-xl font-medium mb-4">
-        <span>볼래요</span>
+        <h5>볼래요</h5>
         <FaBookmark className="text-[20px] text-white" />
         <span className="text-white text-xl font-medium">
-          ({dummyMovies.length})
+          {isSuccess ? `(${savedMovies.totalCount})` : "(-)"}
         </span>
       </div>
-      {/* 더보기 버튼을 박스 밖 맨 오른쪽에 배치 */}
-      <button className="absolute right-0 top-0 text-white text-base font-light cursor-pointer">
+      <span
+        onClick={() => setIsModalOpen(true)}
+        className="absolute right-0 top-0 text-white text-base font-light cursor-pointer"
+      >
         더보기
-      </button>
+      </span>
       {/* 볼래요 박스 */}
-      <div className="flex justify-center items-center bg-[#17181D] rounded-xl pl-6 pr-6 w-[467px] min-h-[460px]">
+      <div className="relative flex justify-center items-center bg-[#17181D] rounded-xl pl-6 pr-6 w-[467px] min-h-[460px]">
         <div className="grid grid-cols-3 grid-rows-2 gap-4 h-full">
-          {dummyMovies.slice(0, 6).map((movie) => (
-            <div
-              key={movie.movie_id}
-              className="flex flex-col items-center justify-center"
-            >
-              <div className="w-[137px] h-[202px] bg-gray-700 rounded"></div>
+          <div
+            onClick={() => setIsModalOpen(true)}
+            className="absolute top-0 right-0 w-full h-full bg-transparent z-1 cursor-pointer"
+          />
+          {isLoading &&
+            Array.from({ length: 6 }).map((_, index) => (
+              <PosterCardSkeleton
+                key={index}
+                className={twMerge("w-[130px] rounded-lg")}
+              />
+            ))}
+          {!isLoading &&
+            moviesWithPosters.length > 0 &&
+            moviesWithPosters.map((movie) => (
+              <div
+                key={movie.movieId}
+                className="flex flex-col items-center justify-center"
+              >
+                <PosterCard
+                  imageUrl={
+                    movie.posterUrl || "/assets/images/no_poster_image.png"
+                  }
+                  name={movie.title || movie.movieId}
+                  className={twMerge("w-[130px] object-cover rounded-lg")}
+                />
+              </div>
+            ))}
+          {isSuccess && !isLoading && savedMovies.items.length === 0 && (
+            <div className="col-span-3 row-span-2 flex items-center justify-center text-gray-500">
+              찜한 영화가 없습니다 😣
             </div>
-          ))}
+          )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
