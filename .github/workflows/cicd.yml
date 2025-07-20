@@ -8,8 +8,17 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-latest`
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      WEATHER_SERVICE_KEY: ${{ secrets.WEATHER_SERVICE_KEY }}
+      WEATHER_BASE_URL: ${{ secrets.WEATHER_BASE_URL }}
+      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_BASE_URL: ${{ secrets.GEMINI_BASE_URL }}
+      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+      REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
