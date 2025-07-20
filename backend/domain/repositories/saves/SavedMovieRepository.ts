@@ -30,4 +30,36 @@ export interface SavedMovieRepository {
     year: number,
     month: number
   ): Promise<SavedMovie[]>;
+
+  /**
+   * 사용자의 특정 영화 저장된 날짜 목록 조회
+   * @param userId 사용자 ID
+   * @param movieId 영화 ID
+   * @returns 저장된 영화 목록
+   */
+  findByUserIdAndMovieId(
+    userId: string,
+    movieId: string
+  ): Promise<SavedMovie[]>;
+
+  /**
+   * 사용자의 특정 날짜 저장된 영화 목록 조회
+   * @param userId 사용자 ID
+   * @param date 날짜 (YYYY-MM-DD)
+   * @returns 저장된 영화 목록
+   */
+  findByUserIdAndDate(userId: string, date: string): Promise<SavedMovie[]>;
+
+  /**
+   * 사용자의 특정 영화와 날짜로 저장된 영화 삭제
+   * @param userId 사용자 ID
+   * @param movieId 영화 ID
+   * @param date 날짜 (YYYY-MM-DD)
+   * @returns 삭제 성공 여부
+   */
+  deleteByUserIdAndMovieIdAndDate(
+    userId: string,
+    movieId: string,
+    date: string
+  ): Promise<boolean>;
 }

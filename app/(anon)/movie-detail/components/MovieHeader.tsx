@@ -2,16 +2,65 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FaCalendarAlt, FaRegBookmark, FaBookmark } from "react-icons/fa";
 import { getPlatformImages } from "@/app/components/Platform";
+import MovieHeaderCalendar from "./MovieHeaderCalendar";
+import axios from "@/utils/axios";
+import { toast } from "react-toastify";
 
 interface MovieHeaderProps {
   ottProviders?: string[];
+  movieId?: string;
 }
 
-const MovieHeader = ({ ottProviders = [] }: MovieHeaderProps) => {
+const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleBookmarkToggle = () => {
     setIsBookmarked(!isBookmarked);
+  };
+
+  const handleCalendarToggle = () => {
+    setIsCalendarOpen(!isCalendarOpen);
+  };
+
+  const handleDateSelect = async (date: Date) => {
+    if (!movieId) {
+      toast.error("영화 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    try {
+      // 날짜를 YYYY-MM-DD 형식으로 변환
+      const formattedDate = date.toISOString().split("T")[0];
+
+      const response = await axios.post("/saves", {
+        movieId,
+        selectedDate: formattedDate,
+      });
+
+      if (response.data.success) {
+        toast.success("영화가 캘린더에 저장되었습니다!");
+        // 캘린더 닫기
+        setIsCalendarOpen(false);
+      } else {
+        toast.error(response.data.message || "저장에 실패했습니다.");
+      }
+    } catch (error: unknown) {
+      console.error("영화 저장 중 오류:", error);
+
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        if (axiosError.response?.data?.message) {
+          toast.error(axiosError.response.data.message);
+        } else {
+          toast.error("영화 저장 중 오류가 발생했습니다.");
+        }
+      } else {
+        toast.error("영화 저장 중 오류가 발생했습니다.");
+      }
+    }
   };
 
   // OTT 제공자 이미지 경로 배열 가져오기
@@ -55,10 +104,13 @@ const MovieHeader = ({ ottProviders = [] }: MovieHeaderProps) => {
         )}
       </div>
       <div
-        className="flex gap-2 h-16 items-center px-4 py-2 justify-center rounded-xl"
+        className="flex gap-2 h-16 items-center px-4 py-2 justify-center rounded-xl relative"
         style={{ backgroundColor: "rgb(22, 18, 20)" }}
       >
-        <button className="bg-[#31343c] rounded-lg p-2 hover:bg-[#444857] cursor-pointer">
+        <button
+          className="bg-[#31343c] rounded-lg p-2 hover:bg-[#444857] cursor-pointer"
+          onClick={handleCalendarToggle}
+        >
           <FaCalendarAlt size={24} color="#fff" />
         </button>
         <button
@@ -71,6 +123,12 @@ const MovieHeader = ({ ottProviders = [] }: MovieHeaderProps) => {
             <FaRegBookmark size={24} color="#fff" />
           )}
         </button>
+
+        <MovieHeaderCalendar
+          isOpen={isCalendarOpen}
+          onDateSelect={handleDateSelect}
+          movieId={movieId}
+        />
       </div>
     </>
   );
