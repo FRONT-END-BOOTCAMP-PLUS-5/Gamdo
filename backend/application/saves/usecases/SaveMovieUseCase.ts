@@ -24,21 +24,27 @@ export class SaveMovieUseCase {
     try {
       const { movieId, selectedDate } = data;
 
-      // 1. 날짜 형식 검증 (YYYY-MM-DD)
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      // 1. 날짜 형식 검증 (YYYY-MM-DD 또는 YYYY-MM-DD HH:mm:ss)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}(\s\d{2}:\d{2}:\d{2})?$/;
       if (!dateRegex.test(selectedDate)) {
         return {
           success: false,
           message:
-            "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD 형식을 사용하세요)",
+            "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD 또는 YYYY-MM-DD HH:mm:ss 형식을 사용하세요)",
         };
+      }
+
+      // 2. 시간이 없으면 01:01:01 추가
+      let formattedDate = selectedDate;
+      if (!selectedDate.includes(" ")) {
+        formattedDate = `${selectedDate} 01:01:01`;
       }
 
       // 2. 같은 날짜에 다른 영화가 저장되어 있는지 확인
       const existingMoviesOnDate =
         await this.savedMovieRepository.findByUserIdAndDate(
           userId,
-          selectedDate
+          formattedDate
         );
 
       if (existingMoviesOnDate.length > 0) {
@@ -47,7 +53,7 @@ export class SaveMovieUseCase {
         if (existingMovie.movieId !== movieId) {
           return {
             success: false,
-            message: `해당 날짜(${selectedDate})에는 이미 다른 영화가 저장되어 있습니다.`,
+            message: `해당 날짜에는 이미 다른 영화가 저장되어 있습니다.`,
           };
         }
         // 같은 영화가 같은 날짜에 저장되어 있으면 갱신 (이미 저장된 상태)
@@ -80,7 +86,7 @@ export class SaveMovieUseCase {
       const savedMovie = new SavedMovie(
         userId,
         movieId,
-        selectedDate // saved_at 컬럼에 저장될 날짜
+        formattedDate // saved_at 컬럼에 저장될 날짜 (시간 포함)
       );
 
       // 5. 수파베이스 calendar 테이블에 저장

@@ -10,38 +10,54 @@ interface MovieHeaderCalendarProps {
   movieId?: string;
 }
 
-interface SaveDateInfo {
-  date: string;
-  movieId: string;
-}
-
 export default function MovieHeaderCalendar({
   isOpen,
   onDateSelect,
   movieId,
 }: MovieHeaderCalendarProps) {
   const defaultClassNames = getDefaultClassNames();
-  const [savedDates, setSavedDates] = useState<SaveDateInfo[]>([]);
+  const [savedDate, setSavedDate] = useState<Date | undefined>(undefined);
 
-  // 캘린더가 열릴 때 해당 영화의 저장된 날짜 목록 가져오기
+  // 캘린더가 열릴 때 해당 영화의 저장된 날짜 가져오기
   useEffect(() => {
     if (isOpen && movieId) {
-      fetchSavedDates(movieId);
+      fetchSavedDate(movieId);
     }
   }, [isOpen, movieId]);
 
-  const fetchSavedDates = async (movieId: string) => {
+  const fetchSavedDate = async (movieId: string) => {
     try {
       const response = await axios.get(`/movies/calenders?movieId=${movieId}`);
-      setSavedDates(response.data);
+
+      // 저장된 날짜가 있으면 해당 날짜를 설정
+      if (response.data && response.data.length > 0) {
+        const savedDateObj = new Date(response.data[0].date);
+        setSavedDate(savedDateObj);
+      } else {
+        setSavedDate(undefined);
+      }
     } catch (error) {
-      console.error("Error fetching saved dates:", error);
+      console.error("Error fetching saved date:", error);
+      setSavedDate(undefined);
     }
   };
 
-  const handleDateChange = (selectedDate: Date) => {
-    if (onDateSelect) {
-      onDateSelect(selectedDate);
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      // UTC 시간으로 날짜 생성하여 타임존 문제 완전 해결
+      const year = date.getFullYear();
+      const month = date.getMonth(); // 0-based
+      const day = date.getDate();
+
+      // UTC 시간으로 Date 객체 생성 (로컬 시간대 무시)
+      const utcDate = new Date(Date.UTC(year, month, day));
+
+      setSavedDate(utcDate);
+      if (onDateSelect) {
+        onDateSelect(utcDate);
+      }
+    } else {
+      setSavedDate(undefined);
     }
   };
 
@@ -51,11 +67,27 @@ export default function MovieHeaderCalendar({
     <div className="absolute top-14 right-0 z-1 mt-2">
       <DayPicker
         mode="single"
+        selected={savedDate}
+        onSelect={handleDateChange}
+        modifiers={{
+          saved: savedDate ? [savedDate] : [],
+        }}
+        modifiersStyles={{
+          saved: {
+            backgroundColor: "#56ebe1",
+            color: "black",
+            fontWeight: "bold",
+            borderRadius: "2rem",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        }}
         classNames={{
-          today: `border-cyan-300`,
-          selected: `bg-cyan-300 border-amber-500 text-white`,
+          selected: ``,
           root: `${defaultClassNames.root} shadow-lg bg-slate-500 rounded-lg p-5`,
           chevron: `${defaultClassNames.chevron} fill-cyan-300`,
+          day: `${defaultClassNames.day} p-2`,
         }}
       />
     </div>

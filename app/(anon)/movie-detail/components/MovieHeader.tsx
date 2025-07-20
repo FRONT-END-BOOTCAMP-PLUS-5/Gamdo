@@ -5,7 +5,8 @@ import { getPlatformImages } from "@/app/components/Platform";
 import { useBookmark } from "../hooks/useBookmark";
 import MovieHeaderCalendar from "./MovieHeaderCalendar";
 import axios from "@/utils/axios";
-import { toast } from "react-toastify";
+import { useToast } from "@/app/hooks/useToast";
+import Toast from "@/app/components/Toast";
 
 interface MovieHeaderProps {
   ottProviders?: string[];
@@ -15,6 +16,7 @@ interface MovieHeaderProps {
 const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const { toast, showSuccess, showError, hideToast } = useToast();
 
   const handleCalendarToggle = () => {
     setIsCalendarOpen(!isCalendarOpen);
@@ -22,25 +24,22 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
 
   const handleDateSelect = async (date: Date) => {
     if (!movieId) {
-      toast.error("영화 정보를 찾을 수 없습니다.");
+      showError("영화 정보를 찾을 수 없습니다.");
       return;
     }
 
     try {
       // 날짜를 YYYY-MM-DD 형식으로 변환
       const formattedDate = date.toISOString().split("T")[0];
-
       const response = await axios.post("/saves", {
         movieId,
         selectedDate: formattedDate,
       });
 
       if (response.data.success) {
-        toast.success("영화가 캘린더에 저장되었습니다!");
-        // 캘린더 닫기
-        setIsCalendarOpen(false);
+        showSuccess("영화가 캘린더에 저장되었습니다! 📅");
       } else {
-        toast.error(response.data.message || "저장에 실패했습니다.");
+        showError(response.data.message || "저장에 실패했습니다.");
       }
     } catch (error: unknown) {
       console.error("영화 저장 중 오류:", error);
@@ -50,12 +49,12 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
           response?: { data?: { message?: string } };
         };
         if (axiosError.response?.data?.message) {
-          toast.error(axiosError.response.data.message);
+          showError(axiosError.response.data.message);
         } else {
-          toast.error("영화 저장 중 오류가 발생했습니다.");
+          showError("영화 저장 중 오류가 발생했습니다.");
         }
       } else {
-        toast.error("영화 저장 중 오류가 발생했습니다.");
+        showError("영화 저장 중 오류가 발생했습니다.");
       }
     }
   };
@@ -128,6 +127,14 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
           movieId={movieId}
         />
       </div>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+        duration={3000}
+      />
     </>
   );
 };
