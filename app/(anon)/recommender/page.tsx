@@ -718,12 +718,12 @@ const RecommenderPage = () => {
       {/* 상단텍스트 + 사용자 정보 카테고리 감싸는 div */}
       <div
         style={{ backgroundColor: "#17181D" }}
-        className="flex flex-col w-6/7 h-screen mx-auto pt-15 px-20 rounded-4xl"
+        className="flex flex-col w-6/7 mx-auto pt-15 px-20 rounded-4xl"
       >
         {/* 날씨 + 사용자 정보 감싸는 섹션 */}
-        <div className="flex-1 flex-col">
+        <div className="flex flex-col">
           {/* 날씨 */}
-          <div className="flex h-1/2 rounded-2xl relative overflow-hidden">
+          <div className="flex min-h-80 rounded-2xl relative overflow-hidden">
             {/* 비디오 배경 */}
             <video
               key={getSelectedWeatherVideo()} // 비디오 변경 시 재렌더링
@@ -795,7 +795,7 @@ const RecommenderPage = () => {
             </div>
             {/* 날씨 오른쪽 섹션*/}
             <div className="flex-1 m-5 text-white" style={{ zIndex: 1 }}>
-              <div className="flex h-1/2 items-center px-5 text-2xl leading-loose">
+              <div className="flex min-h-40 items-center px-5 text-2xl leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
                 <br />
                 선택하신 카테고리에 맞는 영화를 추천해드릴게요!
@@ -808,7 +808,7 @@ const RecommenderPage = () => {
                     ? "2px solid #ff4444"
                     : "none",
                 }}
-                className="flex h-1/2 justify-center items-center px-5 gap-2 rounded-xl"
+                className="flex min-h-40 justify-center items-center px-5 gap-2 rounded-xl flex-wrap overflow-hidden"
               >
                 {weatherButtons.map((item, idx) => {
                   const isSelected = selectedWeather === item;
@@ -830,7 +830,7 @@ const RecommenderPage = () => {
             </div>
           </div>
           {/* 사용자 정보 */}
-          <div className="flex pt-5 h-1/2 text-white text-2xl">
+          <div className="flex pt-5 text-white text-2xl overflow-hidden">
             {/* 유저 선택 컴포넌트 */}
             <div
               style={{
@@ -839,7 +839,7 @@ const RecommenderPage = () => {
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
                 border: validationErrors.emotion ? "2px solid #ff4444" : "none",
               }}
-              className="flex-1 flex-col my-5 p-5 rounded-xl"
+              className="flex-1 flex-col my-5 p-5 rounded-xl overflow-hidden"
             >
               {/* 아이콘 */}
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
@@ -871,7 +871,7 @@ const RecommenderPage = () => {
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
                 border: validationErrors.emotion ? "2px solid #ff4444" : "none",
               }}
-              className="flex-1 flex-col my-5 mx-8 p-5 rounded-xl"
+              className="flex-1 flex-col my-5 mx-8 p-5 rounded-xl overflow-hidden"
             >
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
                 <MdLocalMovies color="4BBEAB" size={28} />
@@ -902,7 +902,7 @@ const RecommenderPage = () => {
                   "1D1F28 linear-gradient(135deg, #FFFFFF 0%, #092949 100%)",
                 border: validationErrors.time ? "2px solid #ff4444" : "none",
               }}
-              className="flex-1 flex-col my-5 p-5 rounded-xl"
+              className="flex-1 flex-col my-5 p-5 rounded-xl overflow-hidden"
             >
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
                 <CiTimer color="4BBEAB" size={28} />
@@ -930,7 +930,7 @@ const RecommenderPage = () => {
         {/* 추천 시작 버튼 */}
         {/* 뒤에 이미지를 추가해야돼서 버튼 컴포넌트 사용 못해서 직접 작성함*/}
 
-        <div className="flex my-10 justify-center items-center">
+        <div className="flex my-10 justify-center items-center overflow-hidden">
           <button
             className={`text-2xl half-border-spin ${
               spin ? " spin-active" : "hover:cursor-pointer"
@@ -1063,18 +1063,18 @@ const RecommenderPage = () => {
               <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/100 pointer-events-none transition-transform duration-300 group-hover:scale-110"></div>
             </div>
             {/* 가운데 포스터 카드 */}
-            <div className="flex w-3/5 h-1/1 mx-20">
+            <div className="flex w-3/5 h-full justify-center items-center">
               {/* 가운데 왼쪽 */}
               {loadingPosters.has(1) ||
               !visiblePosters[1] ||
               !visiblePosters[1].posterUrl ? (
-                <LoadingPoster className="mr-2.5 max-w-full max-h-full object-contain" />
+                <LoadingPoster className="mr-1 max-w-full max-h-full object-contain" />
               ) : (
                 <>
                   <ClickablePosterCard
                     imageUrl={visiblePosters[1].posterUrl}
                     name={visiblePosters[1].title || "2"}
-                    className="mr-2.5 max-w-full max-h-full object-contain"
+                    className="mr-1 max-w-full max-h-full object-contain"
                     onClick={() => handlePosterClick(visiblePosters[1].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
@@ -1105,13 +1105,13 @@ const RecommenderPage = () => {
               {loadingPosters.has(2) ||
               !visiblePosters[2] ||
               !visiblePosters[2].posterUrl ? (
-                <LoadingPoster className="ml-2.5 max-w-full max-h-full object-contain" />
+                <LoadingPoster className="ml-1 max-w-full max-h-full object-contain" />
               ) : (
                 <>
                   <ClickablePosterCard
                     imageUrl={visiblePosters[2].posterUrl}
                     name={visiblePosters[2].title || "3"}
-                    className="ml-2.5 max-w-full max-h-full object-contain"
+                    className="ml-1 max-w-full max-h-full object-contain"
                     onClick={() => handlePosterClick(visiblePosters[2].title)}
                   />
                   <div style={{ position: "relative", width: 0, height: 0 }}>
