@@ -3,7 +3,7 @@
 import SavedMoviesList from "./components/SavedMoviesList";
 import ReviewSummary from "./components/ReviewSummary";
 import ProfileCard from "./components/ProfileCard";
-import CustomCalendarSection from "./components/CustomCalendarSection";
+import CustomCalendar from "./components/CustomCalendar";
 
 export default function MyPage() {
   return (
@@ -22,7 +22,7 @@ export default function MyPage() {
         <div className="flex justify-between">
           {/* 왼쪽: 캘린더 전체 */}
           <div className="flex flex-col flex-shrink-0">
-            <CustomCalendarSection />
+            <CustomCalendar />
           </div>
 
           {/* 오른쪽: 한줄평 전체 */}

@@ -8,7 +8,12 @@
 // 인증이 필요한 백엔드 API 경로 (미들웨어, axios 인터셉터에서 사용)
 // 하나의 배열에서 관리 (미들웨어용: /api 접두사 포함)
 // @@@@@@페이지 경로가 아니라 api 주소입니다.@@@@@@
-export const AUTH_REQUIRED_API_PATHS = ["/api/review", "/api/user"];
+export const AUTH_REQUIRED_API_PATHS = [
+  "/api/reviews",
+  "/api/user",
+  "/api/saved-watch",
+  "/api/saves",
+];
 
 // axios용: /api 접두사 제거된 경로
 export const AUTH_REQUIRED_API_PATHS_FOR_AXIOS = AUTH_REQUIRED_API_PATHS.map(

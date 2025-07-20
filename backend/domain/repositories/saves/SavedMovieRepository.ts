@@ -17,4 +17,17 @@ export interface SavedMovieRepository {
    * @returns 저장된 영화 목록
    */
   findByUserId(userId: string): Promise<SavedMovie[]>;
+
+  /**
+   * 사용자의 특정 월 저장된 영화 목록 조회
+   * @param userId 사용자 ID
+   * @param year 년도
+   * @param month 월 (1-12)
+   * @returns 저장된 영화 목록
+   */
+  findByUserIdAndMonth(
+    userId: string,
+    year: number,
+    month: number
+  ): Promise<SavedMovie[]>;
 }
