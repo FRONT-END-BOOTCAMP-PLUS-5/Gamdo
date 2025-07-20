@@ -3,6 +3,7 @@
 감정의 온도: 감도
 <img width="880" height="1500" alt="메인홈 - 추천페이지" src="https://github.com/user-attachments/assets/3d46a100-3699-4240-a99f-70240211a242" />
 
+
 # 코드 컨벤션
 
 변수명, 함수명 -> CamelCase
