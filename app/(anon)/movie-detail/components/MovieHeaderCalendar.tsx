@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import axios from "@/utils/axios";
 import { DayPicker, getDefaultClassNames } from "react-day-picker";
 
@@ -8,15 +8,18 @@ interface MovieHeaderCalendarProps {
   isOpen: boolean;
   onDateSelect?: (date: Date) => void;
   movieId?: string;
+  savedDate?: Date;
+  onSavedDateChange?: (date: Date | undefined) => void;
 }
 
 export default function MovieHeaderCalendar({
   isOpen,
   onDateSelect,
   movieId,
+  savedDate,
+  onSavedDateChange,
 }: MovieHeaderCalendarProps) {
   const defaultClassNames = getDefaultClassNames();
-  const [savedDate, setSavedDate] = useState<Date | undefined>(undefined);
 
   // 캘린더가 열릴 때 해당 영화의 저장된 날짜 가져오기
   useEffect(() => {
@@ -32,13 +35,13 @@ export default function MovieHeaderCalendar({
       // 저장된 날짜가 있으면 해당 날짜를 설정
       if (response.data && response.data.length > 0) {
         const savedDateObj = new Date(response.data[0].date);
-        setSavedDate(savedDateObj);
+        onSavedDateChange?.(savedDateObj);
       } else {
-        setSavedDate(undefined);
+        onSavedDateChange?.(undefined);
       }
     } catch (error) {
       console.error("Error fetching saved date:", error);
-      setSavedDate(undefined);
+      onSavedDateChange?.(undefined);
     }
   };
 
@@ -52,12 +55,12 @@ export default function MovieHeaderCalendar({
       // UTC 시간으로 Date 객체 생성 (로컬 시간대 무시)
       const utcDate = new Date(Date.UTC(year, month, day));
 
-      setSavedDate(utcDate);
+      onSavedDateChange?.(utcDate);
       if (onDateSelect) {
         onDateSelect(utcDate);
       }
     } else {
-      setSavedDate(undefined);
+      onSavedDateChange?.(undefined);
     }
   };
 

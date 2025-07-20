@@ -16,6 +16,7 @@ interface MovieHeaderProps {
 const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [savedDate, setSavedDate] = useState<Date | undefined>(undefined);
   const { toast, showSuccess, showError, hideToast } = useToast();
 
   const handleCalendarToggle = () => {
@@ -28,6 +29,9 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
       return;
     }
 
+    // 현재 저장된 날짜를 백업 (에러 시 되돌리기 위해)
+    const currentSavedDate = savedDate;
+
     try {
       // 날짜를 YYYY-MM-DD 형식으로 변환
       const formattedDate = date.toISOString().split("T")[0];
@@ -39,10 +43,15 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
       if (response.data.success) {
         showSuccess("영화가 캘린더에 저장되었습니다! 📅");
       } else {
+        // 에러 발생 시 이전 상태로 되돌리기
+        setSavedDate(currentSavedDate);
         showError(response.data.message || "저장에 실패했습니다.");
       }
     } catch (error: unknown) {
       console.error("영화 저장 중 오류:", error);
+
+      // 에러 발생 시 이전 상태로 되돌리기
+      setSavedDate(currentSavedDate);
 
       if (error && typeof error === "object" && "response" in error) {
         const axiosError = error as {
@@ -125,6 +134,8 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
           isOpen={isCalendarOpen}
           onDateSelect={handleDateSelect}
           movieId={movieId}
+          savedDate={savedDate}
+          onSavedDateChange={setSavedDate}
         />
       </div>
 
