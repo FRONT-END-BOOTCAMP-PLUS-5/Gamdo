@@ -26,6 +26,11 @@ const MoviePreviewInfo = ({
   // TMDB 이미지 기본 URL
   const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
+  // 포스터/백드롭 이미지 URL 생성
+  const mainImageUrl = detail?.backdrop_path
+    ? `https://image.tmdb.org/t/p/w780${detail.backdrop_path}`
+    : "/assets/images/test_image_01.png";
+
   // 접힘 상태에서 보여줄 기본 정보
   const previewInfo = {
     releaseDate: info.release_date,
@@ -44,20 +49,18 @@ const MoviePreviewInfo = ({
       }
     : null;
 
-  // 포스터 이미지 URL 생성
-  const posterUrl = info.poster_path
-    ? `${TMDB_IMAGE_BASE_URL}${info.poster_path}`
-    : "/assets/images/test_image_01.png";
+  console.log("MoviePreviewInfo info:", info);
+  console.log("moviedetaildto", detail);
 
   return (
     <>
       {/* 상단 이미지와 닫기 버튼 등 */}
-      <div className="relative w-full h-[500px] max-h-[70vh] bg-black ">
+      <div className="relative w-full aspect-[16/9] max-h-[70vh] bg-black">
         <Image
-          src={posterUrl}
-          alt="movie poster"
+          src={mainImageUrl}
+          alt="movie main visual"
           fill
-          className="object-cover w-full h-full rounded-tl-2xl rounded-tr-2xl"
+          className="object-cover object-top w-full h-full rounded-tl-2xl rounded-tr-2xl"
           priority
         />
         {/* 닫기 버튼은 Modal에서 처리 */}
