@@ -1,6 +1,7 @@
 # Gamdo
 
 감정의 온도: 감도
+<br >
 [배포 URL 링크](https://gamdo-five.vercel.app/)
 
 <img width="880" height="1500" alt="메인홈 - 추천페이지" src="https://github.com/user-attachments/assets/3d46a100-3699-4240-a99f-70240211a242" />
