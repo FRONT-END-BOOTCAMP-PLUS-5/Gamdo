@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AUTH_REQUIRED_API_PATHS_FOR_AXIOS } from "@/app/constants";
+import { AUTH_REQUIRED_API_PATHS } from "@/app/constants";
 
 const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
@@ -10,9 +10,21 @@ const instance = axios.create({
   },
 });
 
-// 인증이 필요한 api 주소인지 확인
-function isAuthRequired(url: string) {
-  return AUTH_REQUIRED_API_PATHS_FOR_AXIOS.some((path) => url.startsWith(path));
+// 인증이 필요한 api 주소인지 확인 (HTTP 메서드별로 구분)
+function isAuthRequired(url: string, method: string = "GET") {
+  // 모든 HTTP 메서드에서 인증이 필요한 경로
+  const isAuthRequiredForAll = AUTH_REQUIRED_API_PATHS.all.some((path) =>
+    url.startsWith(path.replace("/api", ""))
+  );
+
+  // POST, PUT, DELETE에서만 인증이 필요한 경로 (GET은 인증 불필요)
+  const isAuthRequiredForWrite = AUTH_REQUIRED_API_PATHS.write.some((path) =>
+    url.startsWith(path.replace("/api", ""))
+  );
+
+  const isGetRequest = method.toUpperCase() === "GET";
+
+  return isAuthRequiredForAll || (isAuthRequiredForWrite && !isGetRequest);
 }
 
 // 전역 상태 초기화를 위한 함수 (클라이언트 사이드에서만 실행)
@@ -44,7 +56,7 @@ instance.interceptors.response.use(
       error.response &&
       error.response.status === 401 &&
       !originalRequest._retry &&
-      isAuthRequired(originalRequest.url)
+      isAuthRequired(originalRequest.url, originalRequest.method)
     ) {
       originalRequest._retry = true;
       try {
@@ -63,7 +75,7 @@ instance.interceptors.response.use(
     if (
       error.response &&
       error.response.status === 403 &&
-      (isAuthRequired(originalRequest.url) ||
+      (isAuthRequired(originalRequest.url, originalRequest.method) ||
         originalRequest.url?.includes("/auth/refresh-token"))
     ) {
       console.log("🚫 토큰 갱신 불가능 - 바로 로그아웃 처리");

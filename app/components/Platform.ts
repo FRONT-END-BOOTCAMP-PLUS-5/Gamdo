@@ -29,8 +29,14 @@ export const mapOttProviderToPlatform = (
 
 // OTT 제공자 배열을 받아서 플랫폼 이미지 경로 배열을 반환하는 함수
 export const getPlatformImages = (ottProviders: string[]): string[] => {
-  return ottProviders
+  // 1. 플랫폼 키로 매핑
+  const mapped = ottProviders
     .map((provider) => mapOttProviderToPlatform(provider))
-    .filter((platform): platform is PlatformType => platform !== null)
-    .map((platform) => platformMapping[platform]);
+    .filter((platform): platform is PlatformType => platform !== null);
+
+  // 2. 중복 제거 (Set 사용)
+  const uniquePlatforms = Array.from(new Set(mapped));
+
+  // 3. 이미지 경로로 변환
+  return uniquePlatforms.map((platform) => platformMapping[platform]);
 };

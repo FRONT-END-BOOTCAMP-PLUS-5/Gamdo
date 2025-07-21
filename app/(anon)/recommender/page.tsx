@@ -21,6 +21,15 @@ import { getLocationWeatherData } from "../../../utils/supabase/recommenders/wea
 import { ParsedWeatherInfo } from "../../../backend/domain/entities/recommenders/weather";
 import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 
+// 예고편 링크 배열
+const trailerUrls = [
+  "https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/2vCBuo0AESI?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/42CK_hmKkq0?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/Xb96_61kMS8?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/j9uJFN6WMbc?autoplay=1&mute=1",
+];
+
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -690,6 +699,12 @@ const RecommenderPage = () => {
   ];
   const timeButtons = ["오전", "오후", "저녁", "새벽"];
 
+  // 랜덤 인덱스 선택 (컴포넌트 렌더 시 한 번만)
+  const [randomIndex] = useState(() =>
+    Math.floor(Math.random() * trailerUrls.length)
+  );
+  const selectedTrailerUrl = trailerUrls[randomIndex];
+
   return (
     // 전체 wrap
     <div className="flex flex-col">
@@ -712,7 +727,7 @@ const RecommenderPage = () => {
       />
 
       {/* 취향에 딱 맞춘 영화 */}
-      <div className="flex mb-15 justify-center text-white text-5xl">
+      <div className="flex mb-15 mt-10 justify-center font-bold text-white text-2xl">
         취향에 딱 맞춘 영화를 추천해드릴게요
       </div>
       {/* 상단텍스트 + 사용자 정보 카테고리 감싸는 div */}
@@ -738,7 +753,7 @@ const RecommenderPage = () => {
             </video>
             <div className="w-full h-full bg-black/8 absolute top-0 left-0" />
             {/* 날씨 왼쪽 섹션 */}
-            <div className="flex flex-col m-5 p-10 text-white rounded-xl relative bg-black/14 z-1 backdrop-blur-xs border-white/20 border-1">
+            <div className="flex flex-col m-5 p-10 text-white rounded-xl relative bg-black/14 z-1 backdrop-blur-xs ">
               <div className="absolute left-60 top-15">
                 {weatherData && getWeatherIcon(weatherData)}
               </div>
@@ -757,7 +772,7 @@ const RecommenderPage = () => {
               </div>
               {/* 날씨 각종 정보 섹션 */}
               <div className="flex ">
-                <div className="flex flex-col justify-center pr-5 border-r-2 border-white-100">
+                <div className="flex flex-col justify-center pr-5">
                   <span>
                     날ㅤㅤ씨 {weatherData?.weatherDescription || "--"}
                   </span>
@@ -793,7 +808,7 @@ const RecommenderPage = () => {
             </div>
             {/* 날씨 오른쪽 섹션*/}
             <div className="flex-1 m-5 text-white" style={{ zIndex: 1 }}>
-              <div className="flex min-h-40 items-center px-5 text-2xl leading-loose">
+              <div className="flex min-h-40 items-center px-5 text-l leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
                 <br />
                 선택하신 카테고리에 맞는 영화를 추천해드릴게요!
@@ -843,9 +858,9 @@ const RecommenderPage = () => {
                 <SiCoffeescript color="4BBEAB" size={28} />
               </div>
               {/* 카테고리 */}
-              <div className="mt-5 pl-1 pb-4 border-b-2 border-white">감정</div>
+              <div className="mt-5 pl-1 pb-4">감정</div>
 
-              <div className="inline-flex flex-wrap w-full justify-between">
+              <div className="inline-flex flex-wrap w-full gap-2">
                 {emotionButtons.map((item, idx) => {
                   const isSelected = selectedEmotion.includes(item);
                   return (
@@ -853,7 +868,7 @@ const RecommenderPage = () => {
                       key={idx}
                       text={item}
                       onClick={() => toggleSelection("emotion", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-1 ${
                         isSelected ? "bg-blue-500 text-white" : ""
                       }`}
                     ></Button>
@@ -873,9 +888,9 @@ const RecommenderPage = () => {
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
                 <MdLocalMovies color="4BBEAB" size={28} />
               </div>
-              <div className="mt-5 pl-1 pb-4 border-b-2 border-white">장르</div>
+              <div className="mt-5 pl-1 pb-4">장르</div>
 
-              <div className="inline-flex flex-wrap w-full justify-between">
+              <div className="inline-flex flex-wrap w-full gap-2">
                 {categoryButtons.map((item, idx) => {
                   const isSelected = selectedCategory.includes(item);
                   return (
@@ -883,7 +898,7 @@ const RecommenderPage = () => {
                       key={idx}
                       text={item}
                       onClick={() => toggleSelection("category", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-1 ${
                         isSelected ? "bg-blue-500 text-white" : ""
                       }`}
                     ></Button>
@@ -904,9 +919,9 @@ const RecommenderPage = () => {
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
                 <CiTimer color="4BBEAB" size={28} />
               </div>
-              <div className="mt-5 pl-1 pb-4 border-b-2 border-white">시간</div>
+              <div className="mt-5 pl-1 pb-4">시간</div>
 
-              <div className="inline-flex flex-wrap w-full justify-between">
+              <div className="inline-flex flex-wrap w-full gap-2">
                 {timeButtons.map((item, idx) => {
                   const isSelected = selectedTime.includes(item);
                   return (
@@ -914,7 +929,7 @@ const RecommenderPage = () => {
                       key={idx}
                       text={item}
                       onClick={() => toggleSelection("time", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-1 ${
                         isSelected ? "bg-blue-500 text-white" : ""
                       }`}
                     ></Button>
@@ -929,7 +944,7 @@ const RecommenderPage = () => {
 
         <div className="flex my-10 justify-center items-center overflow-hidden">
           <button
-            className={`text-2xl half-border-spin ${
+            className={`text-xl half-border-spin ${
               spin ? " spin-active" : "hover:cursor-pointer"
             } ${spin ? "opacity-50 cursor-not-allowed" : ""}`}
             onClick={() => {
@@ -955,7 +970,7 @@ const RecommenderPage = () => {
               {spin ? "ㅤ추천 중 .." : "ㅤ추천 시작"}
               <WiStars
                 style={{ color: "#56EBE1" }}
-                size={32}
+                size={28}
                 className="ml-2 justify-center items-center"
               />
             </span>
@@ -965,8 +980,8 @@ const RecommenderPage = () => {
       {/* 추천 영화 섹션 */}
       {showPosters && (
         <div className="mt-10">
-          <div className="flex p-4 mb-8">
-            <div className="flex-start text-4xl font-bold text-white">
+          <div className="flex p-10 mb-8">
+            <div className="flex-start text-3xl font-bold text-white">
               추천 영화
             </div>
           </div>
@@ -1181,7 +1196,9 @@ const RecommenderPage = () => {
       )}
 
       {/* 최신 영화 섹션 */}
-      <TrendMovies onPosterClick={handlePosterClick} />
+      <div className="mt-10 px-8">
+        <TrendMovies onPosterClick={handlePosterClick} />
+      </div>
 
       {/* 추천 로딩 모달 */}
       {showModal && (
@@ -1208,7 +1225,7 @@ const RecommenderPage = () => {
                 <iframe
                   width="100%"
                   height="100%"
-                  src="https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1"
+                  src={selectedTrailerUrl}
                   title="영화 예고편"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen

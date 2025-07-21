@@ -9,16 +9,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. 토큰 인증 및 사용자 ID 추출
+    // 1. 토큰 인증 및 사용자 ID 추출 (인증 실패해도 계속 진행)
     const authResult = verifyAuthTokens(req);
-    if (authResult.code !== "ok") {
-      return NextResponse.json(
-        { success: false, message: authResult.code },
-        { status: authResult.status }
-      );
-    }
+    let userId: string | null = null;
 
-    const userId = authResult.userId;
+    if (authResult.code === "ok") {
+      userId = authResult.userId;
+    }
 
     // 2. 쿼리 파라미터에서 영화 ID 추출
     const { searchParams } = new URL(req.url);
@@ -35,7 +32,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 4. UseCase 실행
+    // 4. 인증되지 않은 사용자인 경우 기본 응답 반환
+    if (!userId) {
+      return NextResponse.json({
+        success: true,
+        isSaved: false,
+        savedWatch: null,
+        message: "로그인이 필요합니다.",
+      });
+    }
+
+    // 5. UseCase 실행
     const savedWatchRepository = new SbSavedWatchRepository(supabase);
     const getSavedWatchMovieDetailUsecase = new GetSavedWatchMovieDetailUsecase(
       savedWatchRepository
@@ -46,7 +53,7 @@ export async function GET(req: NextRequest) {
       movieId
     );
 
-    // 5. 결과 반환
+    // 6. 결과 반환
     if (result.success) {
       return NextResponse.json(result);
     } else {

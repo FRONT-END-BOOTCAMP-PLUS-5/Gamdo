@@ -85,14 +85,17 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   // OTT 제공자 이미지 경로 배열 가져오기
   const platformImages = getPlatformImages(ottProviders);
 
+  // 중복 제거
+  const uniquePlatformImages = Array.from(new Set(platformImages));
+
   return (
     <>
       <div
         className="flex gap-3 min-w-[600px] flex-1 h-16 rounded-xl items-center px-4 py-2 justify-center"
         style={{ backgroundColor: "rgb(22, 18, 20)" }}
       >
-        {platformImages.length > 0 ? (
-          platformImages.map((imagePath, index) => (
+        {uniquePlatformImages.length > 0 ? (
+          uniquePlatformImages.map((imagePath, index) => (
             <Image
               key={index}
               src={imagePath}

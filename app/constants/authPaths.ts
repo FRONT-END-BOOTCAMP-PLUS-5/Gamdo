@@ -6,21 +6,25 @@
  */
 
 // 인증이 필요한 백엔드 API 경로 (미들웨어, axios 인터셉터에서 사용)
-// 하나의 배열에서 관리 (미들웨어용: /api 접두사 포함)
+// HTTP 메서드별로 인증 요구사항을 구분
 // @@@@@@페이지 경로가 아니라 api 주소입니다.@@@@@@
-export const AUTH_REQUIRED_API_PATHS = [
-  "/api/reviews",
-  "/api/user",
-  "/api/saved-watch",
-  "/api/saves",
-  "/api/mypage/saved-watches",
-  "/api/movies/calenders",
-];
+export const AUTH_REQUIRED_API_PATHS = {
+  // 모든 HTTP 메서드에서 인증이 필요한 경로
+  all: [
+    "/api/user",
+    "/api/saves",
+    "/api/mypage/saved-watches",
+    "/api/movies/calenders",
+  ],
+  // POST, PUT, DELETE에서만 인증이 필요한 경로 (GET은 인증 불필요)
+  write: ["/api/reviews", "/api/saved-watch"],
+};
 
 // axios용: /api 접두사 제거된 경로
-export const AUTH_REQUIRED_API_PATHS_FOR_AXIOS = AUTH_REQUIRED_API_PATHS.map(
-  (path) => (path.startsWith("/api") ? path.replace("/api", "") : path)
-);
+export const AUTH_REQUIRED_API_PATHS_FOR_AXIOS = [
+  ...AUTH_REQUIRED_API_PATHS.all,
+  ...AUTH_REQUIRED_API_PATHS.write,
+].map((path) => (path.startsWith("/api") ? path.replace("/api", "") : path));
 
 // 인증이 필요한 프론트 페이지 경로 (pageGuard에서 사용)
 // @@@@@@페이지 url입니다@@@@@@
