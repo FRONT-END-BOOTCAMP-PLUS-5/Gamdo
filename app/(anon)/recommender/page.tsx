@@ -727,7 +727,7 @@ const RecommenderPage = () => {
       />
 
       {/* 취향에 딱 맞춘 영화 */}
-      <div className="flex mb-15 mt-10 justify-center font-bold text-white text-2xl">
+      <div className="flex mb-15 mt-10 justify-center font-bold text-white text-3xl">
         취향에 딱 맞춘 영화를 추천해드릴게요
       </div>
       {/* 상단텍스트 + 사용자 정보 카테고리 감싸는 div */}
@@ -808,7 +808,7 @@ const RecommenderPage = () => {
             </div>
             {/* 날씨 오른쪽 섹션*/}
             <div className="flex-1 m-5 text-white" style={{ zIndex: 1 }}>
-              <div className="flex min-h-40 items-center px-5 text-l leading-loose">
+              <div className="flex min-h-40 items-center px-5 text-lg leading-loose">
                 날씨에 따라 보고싶은 영화가 달라진 경험이 있으신가요?
                 <br />
                 선택하신 카테고리에 맞는 영화를 추천해드릴게요!
