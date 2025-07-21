@@ -753,7 +753,7 @@ const RecommenderPage = () => {
             </video>
             <div className="w-full h-full bg-black/8 absolute top-0 left-0" />
             {/* 날씨 왼쪽 섹션 */}
-            <div className="flex flex-col m-5 p-10 text-white rounded-xl relative bg-black/14 z-1 backdrop-blur-xs border-white/20 border-1">
+            <div className="flex flex-col m-5 p-10 text-white rounded-xl relative bg-black/14 z-1 backdrop-blur-xs ">
               <div className="absolute left-60 top-15">
                 {weatherData && getWeatherIcon(weatherData)}
               </div>
@@ -772,7 +772,7 @@ const RecommenderPage = () => {
               </div>
               {/* 날씨 각종 정보 섹션 */}
               <div className="flex ">
-                <div className="flex flex-col justify-center pr-5 border-r-2 border-white-100">
+                <div className="flex flex-col justify-center pr-5">
                   <span>
                     날ㅤㅤ씨 {weatherData?.weatherDescription || "--"}
                   </span>
