@@ -4,6 +4,7 @@ import { CreateReviewUseCase } from "../../../../backend/application/review/Crea
 import { GetReviewUseCase } from "../../../../backend/application/review/GetReviewUseCase";
 import { UpdateReviewUseCase } from "../../../../backend/application/review/UpdateReviewUseCase";
 import { DeleteReviewUseCase } from "../../../../backend/application/review/DeleteReviewUseCase";
+import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
 
 const reviewRepository = new ReviewRepositoryImpl();
 const createReviewUseCase = new CreateReviewUseCase(reviewRepository);
@@ -13,14 +14,31 @@ const deleteReviewUseCase = new DeleteReviewUseCase(reviewRepository);
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, movieId, content } = await req.json();
-    if (!userId || !movieId || !content) {
+    // 1. 토큰에서 userId 추출
+    const tokenResult = verifyAuthTokens(req);
+    if (tokenResult.code !== "ok") {
       return NextResponse.json(
-        { error: "userId, movieId, content are required" },
+        { error: "로그인이 필요합니다." },
+        { status: 401 }
+      );
+    }
+    const userId = tokenResult.userId;
+
+    // 2. body 파싱
+    const { movieId, content } = await req.json();
+    if (!movieId || !content) {
+      return NextResponse.json(
+        { error: "movieId, content are required" },
         { status: 400 }
       );
     }
-    const review = await createReviewUseCase.execute(userId, movieId, content);
+
+    // 3. 리뷰 생성
+    const review = await createReviewUseCase.execute(
+      userId,
+      String(movieId),
+      content
+    );
     return NextResponse.json({ review });
   } catch (error: unknown) {
     console.error("리뷰 POST 에러:", error);
