@@ -727,7 +727,7 @@ const RecommenderPage = () => {
       />
 
       {/* 취향에 딱 맞춘 영화 */}
-      <div className="flex mb-15 mt-10 justify-center text-white text-2xl">
+      <div className="flex mb-15 mt-10 justify-center font-bold text-white text-2xl">
         취향에 딱 맞춘 영화를 추천해드릴게요
       </div>
       {/* 상단텍스트 + 사용자 정보 카테고리 감싸는 div */}
@@ -858,9 +858,9 @@ const RecommenderPage = () => {
                 <SiCoffeescript color="4BBEAB" size={28} />
               </div>
               {/* 카테고리 */}
-              <div className="mt-5 pl-1 pb-4 border-b-2 border-white">감정</div>
+              <div className="mt-5 pl-1 pb-4">감정</div>
 
-              <div className="inline-flex flex-wrap w-full justify-between">
+              <div className="inline-flex flex-wrap w-full gap-2">
                 {emotionButtons.map((item, idx) => {
                   const isSelected = selectedEmotion.includes(item);
                   return (
@@ -868,7 +868,7 @@ const RecommenderPage = () => {
                       key={idx}
                       text={item}
                       onClick={() => toggleSelection("emotion", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-1 ${
                         isSelected ? "bg-blue-500 text-white" : ""
                       }`}
                     ></Button>
@@ -888,9 +888,9 @@ const RecommenderPage = () => {
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
                 <MdLocalMovies color="4BBEAB" size={28} />
               </div>
-              <div className="mt-5 pl-1 pb-4 border-b-2 border-white">장르</div>
+              <div className="mt-5 pl-1 pb-4">장르</div>
 
-              <div className="inline-flex flex-wrap w-full justify-between">
+              <div className="inline-flex flex-wrap w-full gap-2">
                 {categoryButtons.map((item, idx) => {
                   const isSelected = selectedCategory.includes(item);
                   return (
@@ -898,7 +898,7 @@ const RecommenderPage = () => {
                       key={idx}
                       text={item}
                       onClick={() => toggleSelection("category", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-1 ${
                         isSelected ? "bg-blue-500 text-white" : ""
                       }`}
                     ></Button>
@@ -919,9 +919,9 @@ const RecommenderPage = () => {
               <div className="inline-flex justify-center items-center bg-[#DEFFFD] rounded-xl size-12">
                 <CiTimer color="4BBEAB" size={28} />
               </div>
-              <div className="mt-5 pl-1 pb-4 border-b-2 border-white">시간</div>
+              <div className="mt-5 pl-1 pb-4">시간</div>
 
-              <div className="inline-flex flex-wrap w-full justify-between">
+              <div className="inline-flex flex-wrap w-full gap-2">
                 {timeButtons.map((item, idx) => {
                   const isSelected = selectedTime.includes(item);
                   return (
@@ -929,7 +929,7 @@ const RecommenderPage = () => {
                       key={idx}
                       text={item}
                       onClick={() => toggleSelection("time", item)}
-                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-5 ${
+                      className={`flex justify-center items-center whitespace-nowrap text-lg w-20 h-12 px-5 my-1 ${
                         isSelected ? "bg-blue-500 text-white" : ""
                       }`}
                     ></Button>
@@ -944,7 +944,7 @@ const RecommenderPage = () => {
 
         <div className="flex my-10 justify-center items-center overflow-hidden">
           <button
-            className={`text-2xl half-border-spin ${
+            className={`text-xl half-border-spin ${
               spin ? " spin-active" : "hover:cursor-pointer"
             } ${spin ? "opacity-50 cursor-not-allowed" : ""}`}
             onClick={() => {
@@ -970,7 +970,7 @@ const RecommenderPage = () => {
               {spin ? "ㅤ추천 중 .." : "ㅤ추천 시작"}
               <WiStars
                 style={{ color: "#56EBE1" }}
-                size={32}
+                size={28}
                 className="ml-2 justify-center items-center"
               />
             </span>
@@ -980,8 +980,8 @@ const RecommenderPage = () => {
       {/* 추천 영화 섹션 */}
       {showPosters && (
         <div className="mt-10">
-          <div className="flex p-4 mb-8">
-            <div className="flex-start text-4xl font-bold text-white">
+          <div className="flex p-10 mb-8">
+            <div className="flex-start text-3xl font-bold text-white">
               추천 영화
             </div>
           </div>
@@ -1196,7 +1196,9 @@ const RecommenderPage = () => {
       )}
 
       {/* 최신 영화 섹션 */}
-      <TrendMovies onPosterClick={handlePosterClick} />
+      <div className="mt-10 px-8">
+        <TrendMovies onPosterClick={handlePosterClick} />
+      </div>
 
       {/* 추천 로딩 모달 */}
       {showModal && (

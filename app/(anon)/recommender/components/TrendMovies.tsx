@@ -50,18 +50,18 @@ const trendMovies = [
     name: "발레리나",
     movieId: 541671,
   },
-  {
-    id: 9,
-    imageUrl: "/assets/images/trendMovieImages/trendMovie09.webp",
-    name: "지암",
-    movieId: 1429744,
-  },
-  {
-    id: 10,
-    imageUrl: "/assets/images/trendMovieImages/trendMovie10.webp",
-    name: "국가 원수",
-    movieId: 749170,
-  },
+  //   {
+  //     id: 9,
+  //     imageUrl: "/assets/images/trendMovieImages/trendMovie09.webp",
+  //     name: "지암",
+  //     movieId: 1429744,
+  //   },
+  //   {
+  //     id: 10,
+  //     imageUrl: "/assets/images/trendMovieImages/trendMovie10.webp",
+  //     name: "국가 원수",
+  //     movieId: 749170,
+  //   },
 ];
 
 interface TrendMoviesProps {
@@ -71,8 +71,8 @@ interface TrendMoviesProps {
 const TrendMovies: React.FC<TrendMoviesProps> = ({ onPosterClick }) => {
   return (
     <div className="mt-10">
-      <div className="flex p-4 mb-8">
-        <div className="flex-start text-4xl font-bold text-white">
+      <div className="flex p-6 mb-6">
+        <div className="flex-start text-3xl font-bold text-white">
           최신 영화
         </div>
       </div>
@@ -83,7 +83,7 @@ const TrendMovies: React.FC<TrendMoviesProps> = ({ onPosterClick }) => {
           <div
             key={movie.id}
             onClick={() => onPosterClick?.(movie.name)}
-            className="w-[18%] cursor-pointer"
+            className="w-[20%] cursor-pointer"
           >
             <PosterCard
               imageUrl={movie.imageUrl}
