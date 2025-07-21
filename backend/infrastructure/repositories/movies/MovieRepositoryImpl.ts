@@ -25,6 +25,8 @@ export class MovieRepositoryImpl implements MovieRepository {
           title: (data as { title?: string }).title ?? "",
           poster_path:
             (data as { poster_path?: string | null }).poster_path ?? null,
+          backdrop_path:
+            (data as { backdrop_path?: string | null }).backdrop_path ?? null,
           release_date: (data as { release_date?: string }).release_date ?? "",
           genres: Array.isArray((data as { genres?: unknown }).genres)
             ? ((data as { genres?: unknown }).genres as {

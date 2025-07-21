@@ -4,6 +4,7 @@ export interface MovieDetailDto {
   id: number;
   title: string;
   poster_path: string | null;
+  backdrop_path?: string | null;
   release_date: string;
   genres: { id: number; name: string }[];
   runtime: number | null;
@@ -17,6 +18,7 @@ export interface MoviePreviewDto {
   id: number;
   title: string;
   poster_path: string;
+  backdrop_path?: string;
   ott_providers: string[];
   release_date: string;
   rating: string;
