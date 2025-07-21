@@ -21,6 +21,15 @@ import { getLocationWeatherData } from "../../../utils/supabase/recommenders/wea
 import { ParsedWeatherInfo } from "../../../backend/domain/entities/recommenders/weather";
 import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 
+// 예고편 링크 배열
+const trailerUrls = [
+  "https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/2vCBuo0AESI?autoplay=1&mute=1",
+  "https://www.youtube.com/watch?v=42CK_hmKkq0",
+  "https://www.youtube.com/watch?v=Xb96_61kMS8",
+  "https://www.youtube.com/watch?v=j9uJFN6WMbc",
+];
+
 const RecommenderPage = () => {
   const [spin, setSpin] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -690,6 +699,12 @@ const RecommenderPage = () => {
   ];
   const timeButtons = ["오전", "오후", "저녁", "새벽"];
 
+  // 랜덤 인덱스 선택 (컴포넌트 렌더 시 한 번만)
+  const [randomIndex] = useState(() =>
+    Math.floor(Math.random() * trailerUrls.length)
+  );
+  const selectedTrailerUrl = trailerUrls[randomIndex];
+
   return (
     // 전체 wrap
     <div className="flex flex-col">
@@ -1208,7 +1223,7 @@ const RecommenderPage = () => {
                 <iframe
                   width="100%"
                   height="100%"
-                  src="https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1"
+                  src={selectedTrailerUrl}
                   title="영화 예고편"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
