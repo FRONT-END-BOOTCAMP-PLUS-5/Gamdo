@@ -5,12 +5,9 @@ import { SaveMovieUseCase } from "@/backend/application/saves/usecases/SaveMovie
 import { GetCalendarMoviesUseCase } from "@/backend/application/saves/usecases/GetCalendarMoviesUseCase";
 import { DeleteSavedMovieUsecase } from "@/backend/application/saves/usecases/DeleteSavedMovieUsecase";
 import { verifyAuthTokens } from "@/backend/common/auth/verifyAuthTokens";
-import { MemoryCache } from "@/backend/common/cache/MemoryCache";
-import { CalendarResponseDto } from "@/backend/application/saves/dtos/CalendarDto";
 
 const savedMovieRepository: SavedMovieRepository =
   new SavedMovieRepositoryImpl();
-const calendarCache = new MemoryCache<CalendarResponseDto>(10); // 10분 TTL
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,9 +33,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (result.success) {
-      // 4. 캘린더 캐시 무효화 (새 영화가 추가되었으므로)
-      calendarCache.invalidateUserCache(userId);
-
       return NextResponse.json({
         success: true,
         message: "영화가 성공적으로 저장되었습니다.",
@@ -90,9 +84,6 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (result.success) {
-      // 4. 캘린더 캐시 무효화 (영화가 삭제되었으므로)
-      calendarCache.invalidateUserCache(userId);
-
       return NextResponse.json({
         success: true,
         message: result.message,
@@ -148,26 +139,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 4. 캐시 확인
-    const cacheKey = calendarCache.generateCalendarKey(userId, year, month);
-    const cachedData = calendarCache.get(cacheKey);
-
-    if (cachedData) {
-      console.log(`캐시 히트: ${cacheKey}`);
-      return NextResponse.json(cachedData);
-    }
-
-    // 5. 캐시 미스 시 새 데이터 조회
-    console.log(`캐시 미스: ${cacheKey}`);
+    // 4. 캘린더 데이터 조회
     const getCalendarMoviesUseCase = new GetCalendarMoviesUseCase(
       savedMovieRepository
     );
     const result = await getCalendarMoviesUseCase.execute(userId, year, month);
-
-    // 6. 성공 시 캐시에 저장
-    if (result.success) {
-      calendarCache.set(cacheKey, result);
-    }
 
     return NextResponse.json(result);
   } catch (error) {
