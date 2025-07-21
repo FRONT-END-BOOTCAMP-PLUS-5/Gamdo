@@ -25,9 +25,9 @@ import { AddressInfo } from "../../../utils/supabase/recommenders/geolocation";
 const trailerUrls = [
   "https://www.youtube.com/embed/lSCRzeDJxCo?autoplay=1&mute=1",
   "https://www.youtube.com/embed/2vCBuo0AESI?autoplay=1&mute=1",
-  "https://www.youtube.com/watch?v=42CK_hmKkq0",
-  "https://www.youtube.com/watch?v=Xb96_61kMS8",
-  "https://www.youtube.com/watch?v=j9uJFN6WMbc",
+  "https://www.youtube.com/embed/42CK_hmKkq0?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/Xb96_61kMS8?autoplay=1&mute=1",
+  "https://www.youtube.com/embed/j9uJFN6WMbc?autoplay=1&mute=1",
 ];
 
 const RecommenderPage = () => {
