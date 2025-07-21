@@ -42,7 +42,10 @@ const CustomCalendar = () => {
 
     // 날짜 셀들
     for (let d = 1; d <= days; d++) {
-      const dateStr = new Date(year, month, d).toISOString().split("T")[0];
+      // UTC 시간으로 날짜 생성하여 타임존 문제 해결
+      const dateStr = new Date(Date.UTC(year, month, d))
+        .toISOString()
+        .split("T")[0];
       const movie = getMovieByDate(dateStr);
 
       cells.push(

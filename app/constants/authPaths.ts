@@ -14,6 +14,7 @@ export const AUTH_REQUIRED_API_PATHS = [
   "/api/saved-watch",
   "/api/saves",
   "/api/mypage/saved-watches",
+  "/api/movies/calenders",
 ];
 
 // axios용: /api 접두사 제거된 경로
