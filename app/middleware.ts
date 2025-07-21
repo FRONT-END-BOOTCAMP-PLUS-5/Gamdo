@@ -41,9 +41,18 @@ export function middleware(req: NextRequest) {
   );
 
   // 인증이 필요한 경로인지 확인
-  const isAuthRequired = AUTH_REQUIRED_API_PATHS.some((path) =>
+  const isAuthRequiredForAll = AUTH_REQUIRED_API_PATHS.all.some((path) =>
     req.nextUrl.pathname.startsWith(path)
   );
+
+  const isAuthRequiredForWrite = AUTH_REQUIRED_API_PATHS.write.some((path) =>
+    req.nextUrl.pathname.startsWith(path)
+  );
+
+  // GET 요청이면서 write 경로인 경우 인증 불필요
+  const isGetRequest = req.method === "GET";
+  const isAuthRequired =
+    isAuthRequiredForAll || (isAuthRequiredForWrite && !isGetRequest);
 
   if (isAuthRequired) {
     const authResult = verifyAuthTokens(req);
@@ -82,6 +91,7 @@ export const config = {
     // 모든 API 라우트에 CORS 헤더 적용
     "/api/:path*",
     // 인증이 필요한 경로는 추가로 인증 처리
-    ...AUTH_REQUIRED_API_PATHS,
+    ...AUTH_REQUIRED_API_PATHS.all,
+    ...AUTH_REQUIRED_API_PATHS.write,
   ],
 };
