@@ -736,11 +736,9 @@ const RecommenderPage = () => {
             >
               <source src={getSelectedWeatherVideo()} type="video/mp4" />
             </video>
+            <div className="w-full h-full bg-black/8 absolute top-0 left-0" />
             {/* 날씨 왼쪽 섹션 */}
-            <div
-              style={{ backgroundColor: "#5A736E77", zIndex: 1 }}
-              className="flex flex-col m-5 p-10 text-white rounded-xl relative"
-            >
+            <div className="flex flex-col m-5 p-10 text-white rounded-xl relative bg-black/14 z-1 backdrop-blur-xs border-white/20 border-1">
               <div className="absolute left-60 top-15">
                 {weatherData && getWeatherIcon(weatherData)}
               </div>
@@ -803,12 +801,11 @@ const RecommenderPage = () => {
               {/* 날씨 버튼 컴포넌트 ex)맑음, 흐림 ...*/}
               <div
                 style={{
-                  backgroundColor: "#5A736E77",
                   border: validationErrors.weather
                     ? "2px solid #ff4444"
                     : "none",
                 }}
-                className="flex min-h-40 justify-center items-center px-5 gap-2 rounded-xl flex-wrap overflow-hidden"
+                className="flex min-h-40 justify-center items-center px-5 gap-2 rounded-xl flex-wrap overflow-hidden z-1 bg-black/10 backdrop-blur-xs border-white/20 border-1"
               >
                 {weatherButtons.map((item, idx) => {
                   const isSelected = selectedWeather === item;
