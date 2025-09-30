@@ -70,6 +70,7 @@ const MoviePreviewInfo = ({
         <MovieDetailActions
           ottProviders={info.ott_providers}
           movieId={info.id.toString()}
+          movieTitle={info.title}
         />
       </div>
       <div className="p-6">
