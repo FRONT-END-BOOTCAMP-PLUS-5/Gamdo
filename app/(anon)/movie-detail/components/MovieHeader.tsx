@@ -7,13 +7,19 @@ import MovieHeaderCalendar from "./MovieHeaderCalendar";
 import axios from "@/utils/axios";
 import { useToast } from "@/app/hooks/useToast";
 import Toast from "@/app/components/Toast";
+import { handlePlatformClick as navigateToPlatform } from "@/utils/ott/ottNavigation";
 
 interface MovieHeaderProps {
   ottProviders?: string[];
   movieId?: string;
+  movieTitle?: string;
 }
 
-const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
+const MovieHeader = ({
+  ottProviders = [],
+  movieId,
+  movieTitle,
+}: MovieHeaderProps) => {
   const { isBookmarked, isLoading, toggleBookmark } = useBookmark({ movieId });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [savedDate, setSavedDate] = useState<Date | undefined>(undefined);
@@ -88,6 +94,11 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
   // 중복 제거
   const uniquePlatformImages = Array.from(new Set(platformImages));
 
+  // 플랫폼 클릭 핸들러
+  const handlePlatformClick = (imagePath: string) => {
+    navigateToPlatform(imagePath, movieTitle);
+  };
+
   return (
     <>
       <div
@@ -102,7 +113,8 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
               alt={`platform-${index}`}
               width={56}
               height={56}
-              className="w-14 h-14 rounded-xl"
+              className="w-14 h-14 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handlePlatformClick(imagePath)}
             />
           ))
         ) : (
@@ -113,14 +125,18 @@ const MovieHeader = ({ ottProviders = [], movieId }: MovieHeaderProps) => {
               alt="netflix"
               width={56}
               height={56}
-              className="w-14 h-14 rounded-xl"
+              className="w-14 h-14 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handlePlatformClick("/assets/images/netflix.png")}
             />
             <Image
               src="/assets/images/disney-plus.svg"
               alt="disney+"
               width={56}
               height={40}
-              className="w-14 h-14 rounded-xl"
+              className="w-14 h-14 rounded-xl cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() =>
+                handlePlatformClick("/assets/images/disney-plus.svg")
+              }
             />
           </>
         )}
