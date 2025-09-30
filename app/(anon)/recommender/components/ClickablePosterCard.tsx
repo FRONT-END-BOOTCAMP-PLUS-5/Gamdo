@@ -5,6 +5,7 @@ interface ClickablePosterCardProps {
   name: string;
   className?: string;
   onClick: () => void;
+  ottProviders?: string[];
 }
 
 /**
@@ -16,10 +17,16 @@ export default function ClickablePosterCard({
   name,
   className,
   onClick,
+  ottProviders = [],
 }: ClickablePosterCardProps) {
   return (
     <div onClick={onClick} className="cursor-pointer w-full h-full">
-      <PosterCard imageUrl={imageUrl} name={name} className={className} />
+      <PosterCard
+        imageUrl={imageUrl}
+        name={name}
+        className={className}
+        ottProviders={ottProviders}
+      />
     </div>
   );
 }
